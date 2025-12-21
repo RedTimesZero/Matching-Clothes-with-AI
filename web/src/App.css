@@ -1,0 +1,145 @@
+/* ===== Home: full-bleed hero ===== */
+.home {
+  min-height: 100vh;
+  background-image: url("/BG.JPG");
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  color: #fff;
+}
+
+/* 黑色遮罩：讓白字清楚 */
+.home::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: none; /* 重要：遮罩不擋點擊 */
+}
+
+.homeInner {
+  position: relative; /* 蓋在遮罩上 */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Navbar ===== */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* 左右靠邊 */
+  padding: 20px 40px;
+}
+
+.brand {
+  font-family: "Playfair Display", serif;
+  font-size: 22px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.navMenu {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.navBtn {
+  background: transparent;
+  border: 0;
+  color: #fff;
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  padding: 8px 10px;
+  opacity: 0.92;
+  border-radius: 10px;
+  transition: opacity 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.navBtn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+/* ===== Hero content ===== */
+.heroContent {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 40px 60px 40px;
+}
+
+.heroBox {
+  max-width: 720px;
+}
+
+.heroTitle {
+  font-family: "Playfair Display", serif;
+  font-size: 56px;
+  margin: 0 0 10px 0;
+  line-height: 1.05;
+  text-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+.heroSubtitle {
+  font-family: Inter, sans-serif;
+  font-size: 16px;
+  margin: 0 0 28px 0;
+  opacity: 0.92;
+  max-width: 520px;
+  text-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+.heroActions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.heroCardBtn {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.65);
+  color: #fff;
+  padding: 14px 18px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: Inter, sans-serif;
+  font-size: 15px;
+  transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  backdrop-filter: blur(6px);
+}
+
+.heroCardBtn:hover {
+  background: rgba(255,255,255,0.20);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.18);
+}
+
+/* ===== Other pages (white bg + brown text) ===== */
+.page {
+  min-height: 100vh;
+  background: #fff;
+  color: #4a2c1d;
+  padding: 32px 20px;
+  font-family: Inter, sans-serif;
+}
+
+.pageInner {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.backBtn {
+  margin-top: 18px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #4a2c1d;
+  background: #fff;
+  color: #4a2c1d;
+  cursor: pointer;
+}
