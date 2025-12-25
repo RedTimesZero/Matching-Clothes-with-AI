@@ -77,6 +77,18 @@ function Shell({ go, title, subtitle, children }) {
    Closet Page (先做統一風格示意)
 ====================== */
 function ClosetPage({ go }) {
+  const [items, setItems] = useState([
+    { id: 'c1', title: '白色 T-shirt', badge: 'Top', color: '白色', worn: 5, image: '' },
+    { id: 'c2', title: '牛仔褲', badge: 'Bottom', color: '藍色', worn: 2, image: '' },
+    { id: 'c3', title: '深棕外套', badge: 'Outer', color: '棕色', worn: 1, image: '' },
+  ])
+
+  const [open, setOpen] = useState(false)
+
+  function addCloth(newItem) {
+    setItems(prev => [{ ...newItem, id: crypto.randomUUID() }, ...prev])
+  }
+
   return (
     <Shell
       go={go}
@@ -88,30 +100,179 @@ function ClosetPage({ go }) {
       </div>
 
       <div className="grid">
-        <DemoCard title="白色 T-shirt" badge="Top" meta={['白色', '穿過 5 次']} />
-        <DemoCard title="牛仔褲" badge="Bottom" meta={['藍色', '穿過 2 次']} />
-        <DemoCard title="深棕外套" badge="Outer" meta={['棕色', '穿過 1 次']} />
+        {/* ✅ +號新增卡 */}
+        <AddCard onClick={() => setOpen(true)} />
+
+        {/* 原本衣服卡 */}
+        {items.map((it) => (
+          <ClosetCard key={it.id} item={it} />
+        ))}
       </div>
+
+      {open && (
+        <AddClosetModal
+          onClose={() => setOpen(false)}
+          onSubmit={(data) => {
+            addCloth(data)
+            setOpen(false)
+          }}
+        />
+      )}
     </Shell>
   )
 }
 
-function DemoCard({ title, badge, meta }) {
+function ClosetCard({ item }) {
   return (
     <div className="card">
-      <img className="cardImg" alt={title} src="https://images.unsplash.com/photo-1520975958225-8d56346d1b60?auto=format&fit=crop&w=1200&q=60" />
+      <img
+        className="cardImg"
+        alt={item.title}
+        src={item.image || "https://images.unsplash.com/photo-1520975958225-8d56346d1b60?auto=format&fit=crop&w=1200&q=60"}
+      />
       <div className="cardBody">
         <div className="cardTopRow">
-          <p className="cardTitle">{title}</p>
-          <span className="badge">{badge}</span>
+          <p className="cardTitle">{item.title}</p>
+          <span className="badge">{item.badge}</span>
         </div>
         <div className="meta">
-          {meta.map((m) => <span key={m}>{m}</span>)}
+          <span>{item.color}</span>
+          <span>穿過 {item.worn} 次</span>
         </div>
       </div>
     </div>
   )
 }
+
+function AddCard({ onClick }) {
+  return (
+    <button
+      className="card"
+      onClick={onClick}
+      style={{
+        cursor: 'pointer',
+        borderStyle: 'dashed',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 260,
+        background: 'rgba(74, 44, 29, 0.02)'
+      }}
+      aria-label="新增衣服"
+    >
+      <div style={{ textAlign: 'center', padding: 18 }}>
+        <div style={{ fontSize: 56, lineHeight: 1, color: 'rgba(74, 44, 29, 0.75)' }}>＋</div>
+        <div style={{ marginTop: 8, fontWeight: 600 }}>新增衣服</div>
+        <div style={{ marginTop: 6, fontSize: 13, opacity: 0.8 }}>
+          上傳照片與基本資料
+        </div>
+      </div>
+    </button>
+  )
+}
+
+/* ✅ 上傳衣服 modal */
+function AddClosetModal({ onClose, onSubmit }) {
+  const [title, setTitle] = useState('')
+  const [badge, setBadge] = useState('Top')
+  const [color, setColor] = useState('白色')
+  const [worn, setWorn] = useState(0)
+
+  const [file, setFile] = useState(null)
+  const [preview, setPreview] = useState('')
+
+  function handleFile(e) {
+    const f = e.target.files?.[0]
+    if (!f) return
+    setFile(f)
+    const url = URL.createObjectURL(f)
+    setPreview(url)
+  }
+
+  return (
+    <div className="modalBackdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modalHead">
+          <h3 className="modalTitle">新增衣服到衣櫃</h3>
+          <button className="btn btnGhost" onClick={onClose}>✕</button>
+        </div>
+
+        <div className="modalBody">
+          <div className="formGrid">
+            <div className="field" style={{ gridColumn: '1 / -1' }}>
+              <label>上傳照片</label>
+              <input type="file" accept="image/*" onChange={handleFile} />
+              {preview && (
+                <img
+                  alt="preview"
+                  src={preview}
+                  style={{
+                    marginTop: 10,
+                    width: '100%',
+                    height: 180,
+                    objectFit: 'cover',
+                    borderRadius: 12,
+                    border: '1px solid rgba(74, 44, 29, 0.15)'
+                  }}
+                />
+              )}
+            </div>
+
+            <div className="field">
+              <label>衣服名稱</label>
+              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="例如：白色 T-shirt" />
+            </div>
+
+            <div className="field">
+              <label>類別</label>
+              <select value={badge} onChange={(e) => setBadge(e.target.value)}>
+                <option value="Top">Top</option>
+                <option value="Bottom">Bottom</option>
+                <option value="Outer">Outer</option>
+                <option value="Shoes">Shoes</option>
+                <option value="Accessory">Accessory</option>
+              </select>
+            </div>
+
+            <div className="field">
+              <label>顏色</label>
+              <input value={color} onChange={(e) => setColor(e.target.value)} placeholder="例如：白色 / 深棕" />
+            </div>
+
+            <div className="field">
+              <label>穿著次數</label>
+              <input
+                type="number"
+                min="0"
+                value={worn}
+                onChange={(e) => setWorn(Number(e.target.value))}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="modalFoot">
+          <button className="btn btnGhost" onClick={onClose}>取消</button>
+          <button
+            className="btn btnPrimary"
+            onClick={() => {
+              onSubmit({
+                title: title || '未命名衣服',
+                badge,
+                color,
+                worn,
+                image: preview, // 先用本機預覽 URL，之後可換成上傳到後端後的 URL
+              })
+            }}
+          >
+            新增到衣櫃
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
 /* ======================
    Today Page (統一風格示意)
