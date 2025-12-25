@@ -1,5 +1,18 @@
 import { useMemo, useState } from 'react'
 import './App.css'
+const CATEGORY_OPTIONS = [
+  "t-shirt",
+  "shirt",
+  "hoodie",
+  "sweater",
+  "blouse",
+  "jeans",
+  "wide pants",
+  "slim pants",
+  "flare pants",
+  "pants",
+];
+
 
 export default function App() {
   const [page, setPage] = useState('home')
@@ -78,43 +91,70 @@ function Shell({ go, title, subtitle, children }) {
 ====================== */
 function ClosetPage({ go }) {
   const [items, setItems] = useState([
-    { id: 'c1', title: '白色 T-shirt', badge: 'Top', color: '白色', worn: 5, image: '' },
-    { id: 'c2', title: '牛仔褲', badge: 'Bottom', color: '藍色', worn: 2, image: '' },
-    { id: 'c3', title: '深棕外套', badge: 'Outer', color: '棕色', worn: 1, image: '' },
+    { id: 'c1', title: '白色 T-shirt', category: 't-shirt', color: 'white', worn: 5, image: '' },
+    { id: 'c2', title: '牛仔褲', category: 'jeans', color: 'blue', worn: 2, image: '' },
+    { id: 'c3', title: '深棕外套', category: 'sweater', color: 'brown', worn: 1, image: '' },
   ])
 
-  const [open, setOpen] = useState(false)
+  const [addingOpen, setAddingOpen] = useState(false)
+  const [editingItem, setEditingItem] = useState(null) // item or null
 
   function addCloth(newItem) {
     setItems(prev => [{ ...newItem, id: crypto.randomUUID() }, ...prev])
+  }
+
+  function updateCloth(id, patch) {
+    setItems(prev => prev.map(it => it.id === id ? { ...it, ...patch } : it))
+  }
+
+  function deleteCloth(id) {
+    const ok = confirm("確定要刪除這件衣服嗎？")
+    if (!ok) return
+    setItems(prev => prev.filter(it => it.id !== id))
   }
 
   return (
     <Shell
       go={go}
       title="我的衣櫃"
-      subtitle="之後會接：上傳衣服照片、分類、顏色分析、穿著次數。"
+      subtitle="上傳衣服照片、分類、顏色分析、穿著次數。"
     >
       <div className="toolbar">
         <button className="btn btnGhost" onClick={() => go('home')}>← 回主畫面</button>
       </div>
 
       <div className="grid">
-        {/* ✅ +號新增卡 */}
-        <AddCard onClick={() => setOpen(true)} />
+        <AddCard onClick={() => setAddingOpen(true)} />
 
-        {/* 原本衣服卡 */}
         {items.map((it) => (
-          <ClosetCard key={it.id} item={it} />
+          <ClosetCard
+            key={it.id}
+            item={it}
+            onEdit={() => setEditingItem(it)}
+            onDelete={() => deleteCloth(it.id)}
+          />
         ))}
       </div>
 
-      {open && (
-        <AddClosetModal
-          onClose={() => setOpen(false)}
+      {addingOpen && (
+        <ClosetModal
+          mode="add"
+          onClose={() => setAddingOpen(false)}
           onSubmit={(data) => {
             addCloth(data)
-            setOpen(false)
+            setAddingOpen(false)
+          }}
+        />
+      )}
+
+      {editingItem && (
+        <ClosetModal
+          mode="edit"
+          initial={editingItem}
+          onClose={() => setEditingItem(null)}
+          onSubmit={(data) => {
+            updateCloth(editingItem.id, data)
+            setEditingItem(null)
           }}
         />
       )}
@@ -122,7 +162,7 @@ function ClosetPage({ go }) {
   )
 }
 
-function ClosetCard({ item }) {
+function ClosetCard({ item, onEdit, onDelete }) {
   return (
     <div className="card">
       <img
@@ -130,10 +170,17 @@ function ClosetCard({ item }) {
         alt={item.title}
         src={item.image || "https://images.unsplash.com/photo-1520975958225-8d56346d1b60?auto=format&fit=crop&w=1200&q=60"}
       />
+
+      {/* 編輯/刪除 */}
+      <div className="cardActions">
+        <button className="iconBtn" onClick={onEdit} title="編輯">Edit</button>
+        <button className="iconBtn danger" onClick={onDelete} title="刪除">Delete</button>
+      </div>
+
       <div className="cardBody">
         <div className="cardTopRow">
           <p className="cardTitle">{item.title}</p>
-          <span className="badge">{item.badge}</span>
+          <span className="badge">{item.category}</span>
         </div>
         <div className="meta">
           <span>{item.color}</span>
@@ -147,39 +194,30 @@ function ClosetCard({ item }) {
 function AddCard({ onClick }) {
   return (
     <button
-      className="card"
+      className="card addCard"
       onClick={onClick}
-      style={{
-        cursor: 'pointer',
-        borderStyle: 'dashed',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: 260,
-        background: 'rgba(74, 44, 29, 0.02)'
-      }}
       aria-label="新增衣服"
     >
-      <div style={{ textAlign: 'center', padding: 18 }}>
-        <div style={{ fontSize: 56, lineHeight: 1, color: 'rgba(74, 44, 29, 0.75)' }}>＋</div>
-        <div style={{ marginTop: 8, fontWeight: 600 }}>新增衣服</div>
-        <div style={{ marginTop: 6, fontSize: 13, opacity: 0.8 }}>
-          上傳照片與基本資料
-        </div>
+      <div className="addCardInner">
+        <div className="addPlus">＋</div>
+        <div className="addTitle">新增衣服</div>
+        <div className="addSub">上傳照片與基本資料</div>
       </div>
     </button>
   )
 }
 
-/* ✅ 上傳衣服 modal */
-function AddClosetModal({ onClose, onSubmit }) {
-  const [title, setTitle] = useState('')
-  const [badge, setBadge] = useState('Top')
-  const [color, setColor] = useState('白色')
-  const [worn, setWorn] = useState(0)
+/* ✅ 新增/編輯共用 Modal */
+function ClosetModal({ mode, initial, onClose, onSubmit }) {
+  const isEdit = mode === "edit"
 
+  const [title, setTitle] = useState(initial?.title ?? '')
+  const [category, setCategory] = useState(initial?.category ?? CATEGORY_OPTIONS[0])
+  const [color, setColor] = useState(initial?.color ?? '')
+  const [worn, setWorn] = useState(initial?.worn ?? 0)
+
+  const [preview, setPreview] = useState(initial?.image ?? '') // 若不換圖就沿用
   const [file, setFile] = useState(null)
-  const [preview, setPreview] = useState('')
 
   function handleFile(e) {
     const f = e.target.files?.[0]
@@ -193,50 +231,45 @@ function AddClosetModal({ onClose, onSubmit }) {
     <div className="modalBackdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modalHead">
-          <h3 className="modalTitle">新增衣服到衣櫃</h3>
+          <h3 className="modalTitle">{isEdit ? "編輯衣服" : "新增衣服到衣櫃"}</h3>
           <button className="btn btnGhost" onClick={onClose}>✕</button>
         </div>
 
         <div className="modalBody">
           <div className="formGrid">
-            <div className="field" style={{ gridColumn: '1 / -1' }}>
+            <div className="field fieldFull">
               <label>上傳照片</label>
               <input type="file" accept="image/*" onChange={handleFile} />
               {preview && (
-                <img
-                  alt="preview"
-                  src={preview}
-                  style={{
-                    marginTop: 10,
-                    width: '100%',
-                    height: 180,
-                    objectFit: 'cover',
-                    borderRadius: 12,
-                    border: '1px solid rgba(74, 44, 29, 0.15)'
-                  }}
-                />
+                <img className="previewImg" alt="preview" src={preview} />
               )}
             </div>
 
             <div className="field">
               <label>衣服名稱</label>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="例如：白色 T-shirt" />
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="例如：白色 T-shirt"
+              />
             </div>
 
             <div className="field">
               <label>類別</label>
-              <select value={badge} onChange={(e) => setBadge(e.target.value)}>
-                <option value="Top">Top</option>
-                <option value="Bottom">Bottom</option>
-                <option value="Outer">Outer</option>
-                <option value="Shoes">Shoes</option>
-                <option value="Accessory">Accessory</option>
+              <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                {CATEGORY_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
               </select>
             </div>
 
             <div className="field">
               <label>顏色</label>
-              <input value={color} onChange={(e) => setColor(e.target.value)} placeholder="例如：白色 / 深棕" />
+              <input
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                placeholder="例如：white / brown"
+              />
             </div>
 
             <div className="field">
@@ -258,20 +291,21 @@ function AddClosetModal({ onClose, onSubmit }) {
             onClick={() => {
               onSubmit({
                 title: title || '未命名衣服',
-                badge,
-                color,
+                category,
+                color: color || 'unknown',
                 worn,
-                image: preview, // 先用本機預覽 URL，之後可換成上傳到後端後的 URL
+                image: preview, // demo: 用本機 preview URL（之後接後端再換成真實網址）
               })
             }}
           >
-            新增到衣櫃
+            {isEdit ? "儲存修改" : "新增到衣櫃"}
           </button>
         </div>
       </div>
     </div>
   )
 }
+
 
 
 /* ======================

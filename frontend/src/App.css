@@ -313,10 +313,11 @@
   padding: 14px 16px 16px 16px;
 }
 
-.formGrid {
+.formGrid{
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 14px;              /* ✅ 格子間距 */
+  margin-top: 10px;
 }
 
 @media (max-width: 560px) {
@@ -347,4 +348,112 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.field{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;               /* ✅ label 和 input 的距離 */
+}
+
+.fieldFull{
+  grid-column: 1 / -1;
+}
+
+.field input,
+.field select{
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 手機/小螢幕變單欄 */
+@media (max-width: 720px){
+  .formGrid{
+    grid-template-columns: 1fr;
+  }
+}
+
+.previewImg{
+  margin-top: 10px;
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(74, 44, 29, 0.15);
+}
+
+/* === + card === */
+.addCard{
+  cursor: pointer;
+  border-style: dashed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  background: rgba(74, 44, 29, 0.02);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.addCard:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+.addCardInner{
+  text-align: center;
+  padding: 18px;
+}
+.addPlus{
+  font-size: 56px;
+  line-height: 1;
+  color: rgba(74, 44, 29, 0.75);
+}
+.addTitle{
+  margin-top: 8px;
+  font-weight: 700;
+}
+.addSub{
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: .8;
+}
+
+/* === card edit/delete === */
+.card{
+  position: relative;
+}
+
+.cardActions{
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity .15s ease, transform .15s ease;
+}
+
+.card:hover .cardActions{
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.iconBtn{
+  border: 1px solid rgba(74, 44, 29, 0.25);
+  background: rgba(255,255,255,0.9);
+  color: #4a2c1d;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.iconBtn:hover{
+  background: #4a2c1d;
+  color: white;
+}
+
+.iconBtn.danger:hover{
+  background: #8b2e2e;
+  border-color: #8b2e2e;
+  color: white;
 }
