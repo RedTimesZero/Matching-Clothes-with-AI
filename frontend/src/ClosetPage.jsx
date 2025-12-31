@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabaseClient.js'
 import Shell from './Shell.jsx'
 
@@ -19,6 +19,23 @@ const CATEGORY_OPTIONS = [
   "other"
 ];
 
+const COLOR_OPTIONS = [
+  "black",
+  "white",
+  "gray",
+  "navy",
+  "blue",
+  "light blue",
+  "dark blue",
+  "beige",
+  "brown",
+  "green",
+  "olive",
+  "red",
+  "pink",
+]
+
+
 // 把 DB row 轉成你卡片想用的格式
 function rowToItem(row) {
   return {
@@ -29,8 +46,10 @@ function rowToItem(row) {
     worn: row.worn,
     image: row.image_url || '',
     image_path: row.image_path || null,
+    created_at: row.created_at || null, // ✅ for sorting
   }
 }
+
 
 // 上傳衣櫃圖片到 Storage，回傳 publicUrl + path（path 會存 DB，之後刪檔用）
 async function uploadClosetImage(file, userId) {
@@ -54,6 +73,12 @@ export default function ClosetPage({ go, user }) {
 
   const [addingOpen, setAddingOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
+  // 篩選 / 排序
+  const [q, setQ] = useState('')
+  const [cat, setCat] = useState('all')
+  const [col, setCol] = useState('all')
+  const [sort, setSort] = useState('newest') // newest | wornDesc | wornAsc | titleAsc
+
 
   // 進頁面先從 Supabase 把衣服抓回來
   useEffect(() => {
@@ -102,7 +127,7 @@ export default function ClosetPage({ go, user }) {
           user_id: user.id,
           title: form.title || '未命名衣服',
           category: form.category,
-          color: form.color || 'unknown',
+          color: form.color,
           worn: form.worn ?? 0,
           image_url,
           image_path,
@@ -128,7 +153,7 @@ export default function ClosetPage({ go, user }) {
       const patch = {
         title: form.title || '未命名衣服',
         category: form.category,
-        color: form.color || 'unknown',
+        color: form.color,
         worn: form.worn ?? 0,
       }
 
@@ -200,6 +225,47 @@ export default function ClosetPage({ go, user }) {
         <button className="btn btnGhost" onClick={() => go('home')}>← 回主畫面</button>
         <button className="btn btnPrimary" onClick={() => setAddingOpen(true)}>＋ 新增</button>
       </div>
+      <div className="toolbar" style={{ gap: 10, flexWrap: 'wrap' }}>
+        <input
+          style={{ flex: 1, minWidth: 180 }}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="搜尋衣服名稱（例如：skirt）"
+        />
+
+        <select value={cat} onChange={(e) => setCat(e.target.value)}>
+          <option value="all">All categories</option>
+          {CATEGORY_OPTIONS.map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+
+        <select value={col} onChange={(e) => setCol(e.target.value)}>
+          <option value="all">All colors</option>
+          {/* 這裡如果你有 COLOR_OPTIONS 就用那個；沒有就先這樣 */}
+          {["black","white","gray","navy","blue","light blue","dark blue","beige","brown","green","olive","red","pink"]
+            .map(c => <option key={c} value={c}>{c}</option>)
+          }
+        </select>
+
+        <select value={sort} onChange={(e) => setSort(e.target.value)}>
+          <option value="newest">Newest</option>
+          <option value="wornDesc">Most worn</option>
+          <option value="wornAsc">Least worn</option>
+          <option value="titleAsc">Title A → Z</option>
+        </select>
+
+        <button
+          className="btn btnGhost"
+          onClick={() => { setQ(''); setCat('all'); setCol('all'); setSort('newest') }}
+        >
+          清除
+        </button>
+
+        <div style={{ opacity: 0.7, fontSize: 14 }}>
+          顯示 {visibleItems.length} / {items.length}
+        </div>
+      </div>
 
       {error && (
         <div style={{ margin: '10px 0', color: '#b00020' }}>
@@ -213,7 +279,7 @@ export default function ClosetPage({ go, user }) {
         <div className="grid">
           <AddCard onClick={() => setAddingOpen(true)} />
 
-          {items.map((it) => (
+          {visibleItems.map((it) => (
             <ClosetCard
               key={it.id}
               item={it}
@@ -223,6 +289,7 @@ export default function ClosetPage({ go, user }) {
               onWorn={() => wornPlusOne(it)}
             />
           ))}
+
         </div>
       )}
 
@@ -302,7 +369,7 @@ function ClosetModal({ mode, initial, onClose, onSubmit }) {
 
   const [title, setTitle] = useState(initial?.title ?? '')
   const [category, setCategory] = useState(initial?.category ?? CATEGORY_OPTIONS[0])
-  const [color, setColor] = useState(initial?.color ?? '')
+  const [color, setColor] = useState(initial?.color ?? COLOR_OPTIONS[0])
   const [worn, setWorn] = useState(initial?.worn ?? 0)
 
   // 這裡的 preview 只拿來「畫面預覽」，真正會存的是上傳後的 publicUrl
@@ -357,8 +424,12 @@ function ClosetModal({ mode, initial, onClose, onSubmit }) {
             </div>
 
             <div className="field">
-              <label>穿著次數</label>
-              <input type="number" min="0" value={worn} onChange={(e) => setWorn(Number(e.target.value))} />
+              <label>顏色</label>
+              <select value={color} onChange={(e) => setColor(e.target.value)}>
+                {COLOR_OPTIONS.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -367,13 +438,13 @@ function ClosetModal({ mode, initial, onClose, onSubmit }) {
           <button className="btn btnGhost" onClick={onClose}>取消</button>
           <button
             className="btn btnPrimary"
-            onClick={() => onSubmit({
-              title,
-              category,
-              color,
-              worn,
-              file, // ✅ 關鍵：把 file 丟回去，父層才有辦法上傳到 Storage
-            })}
+            onClick={() => onSubmit({ 
+              title, 
+              category, 
+              color: color || COLOR_OPTIONS[0], 
+              worn, 
+              file })
+            }
           >
             {isEdit ? "儲存修改" : "新增到衣櫃"}
           </button>
@@ -382,3 +453,29 @@ function ClosetModal({ mode, initial, onClose, onSubmit }) {
     </div>
   )
 }
+
+  const visibleItems = useMemo(() => {
+    const keyword = q.trim().toLowerCase()
+
+    let arr = items.filter((it) => {
+      const okQ =
+        !keyword ||
+        (it.title || '').toLowerCase().includes(keyword)
+
+      const okCat = cat === 'all' || it.category === cat
+      const okCol = col === 'all' || it.color === col
+
+      return okQ && okCat && okCol
+    })
+
+    // 排序
+    arr = [...arr].sort((a, b) => {
+      if (sort === 'wornDesc') return (b.worn || 0) - (a.worn || 0)
+      if (sort === 'wornAsc') return (a.worn || 0) - (b.worn || 0)
+      if (sort === 'titleAsc') return (a.title || '').localeCompare(b.title || '')
+      // newest (預設)
+      return new Date(b.created_at || 0) - new Date(a.created_at || 0)
+    })
+
+    return arr
+  }, [items, q, cat, col, sort])
