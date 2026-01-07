@@ -11,8 +11,8 @@ from playwright.async_api import async_playwright
 # =============================
 
 SEED_URL = "https://www.plain-me.com/men/mixandmatch/"
-MAX_PAGES = 5  # seed pages to iterate (page=1..MAX_PAGES)
-MAX_OUTFITS = 120  # total outfits to crawl
+MAX_PAGES = 40  # seed pages to iterate (page=1..MAX_PAGES)
+MAX_OUTFITS = 480  # total outfits to crawl
 PAGE_WAIT = 1.0    # seconds to wait after load/scroll
 SCROLL_ROUNDS = 3  # scroll times on seed page to load more cards
 OUTPUT_FILE = Path("plainme_outfit_pairs.json")
