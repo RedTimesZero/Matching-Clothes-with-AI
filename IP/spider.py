@@ -11,7 +11,7 @@ import re
 BASE_URL = "https://wear.jp"
 START_PAGE = 1
 END_PAGE = 80
-MAX_OUTFITS_PER_PAGE = 25
+MAX_OUTFITS_PER_PAGE = 50
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) OutfitResearchBot/1.0",
@@ -28,16 +28,27 @@ TOP_KEYWORDS = {
     "t-shirt": ["tシャツ", "t-shirt", "tee"],
     "shirt": ["シャツ", "shirt"],
     "hoodie": ["パーカー", "hoodie"],
-    "sweater": ["ニット", "sweater"],
-    "blouse": ["ブラウス", "blouse"]
+    "sweater": ["ニット", "sweater", "セーター"],
+    "blouse": ["ブラウス", "blouse"],
+    "jacket": ["ジャケット", "jacket"],
+    "coat": ["コート", "coat"],
+    "cardigan": ["カーディガン", "cardigan"],
+    "vest": ["ベスト", "vest"],
+    "tank top": ["タンクトップ", "tank top"],
+    "camisole": ["キャミソール", "camisole"]
 }
 
 BOTTOM_KEYWORDS = {
-    "jeans": ["デニム", "jeans"],
+    "jeans": ["デニム", "jeans", "ジーンズ"],
     "wide pants": ["ワイドパンツ", "ワイド"],
     "slim pants": ["スリムパンツ", "スリム"],
     "flare pants": ["フレアパンツ", "フレア"],
-    "pants": ["パンツ"]
+    "pants": ["パンツ"],
+    "skirt": ["スカート", "skirt"],
+    "shorts": ["ショートパンツ", "shorts"],
+    "capris": ["七分丈", "capris"],
+    "leggings": ["レギンス", "leggings"],
+    "sweat pants": ["スウェットパンツ", "sweat pants"]
 }
 
 # ==================================================
@@ -47,14 +58,22 @@ BOTTOM_KEYWORDS = {
 JP_COLORS_FINE = {
     "black": ["黒", "ブラック"],
     "white": ["白", "ホワイト"],
-    "gray": ["グレー"],
+    "gray": ["グレー", "灰色"],
     "light blue": ["ライトブルー"],
     "blue": ["青", "ブルー"],
-    "navy": ["ネイビー"],
+    "navy": ["ネイビー", "紺"],
     "beige": ["ベージュ"],
     "brown": ["ブラウン", "茶"],
     "green": ["グリーン", "緑"],
-    "red": ["レッド", "赤"]
+    "red": ["レッド", "赤", "紅"],
+    "pink": ["ピンク", "桃色"],
+    "orange": ["オレンジ"],
+    "yellow": ["イエロー", "黄色"],
+    "purple": ["紫", "パープル"],
+    "gold": ["ゴールド", "金"],
+    "silver": ["シルバー", "銀"],
+    "cream": ["クリーム"],
+    "khaki": ["カーキ"]
 }
 
 # ==================================================
@@ -113,10 +132,10 @@ def crawl_outfit_page(url):
     try:
         r = requests.get(url, headers=HEADERS, timeout=8)
     except requests.exceptions.RequestException:
-        return None
+        return None, "request_error"
 
     if r.status_code != 200:
-        return None
+        return None, "http_error"
 
     soup = BeautifulSoup(r.text, "html.parser")
     text = soup.get_text(" ", strip=True).lower()
@@ -128,39 +147,50 @@ def crawl_outfit_page(url):
     top_positions = []
     bottom_positions = []
 
+    # Find all matching tops and pick the one with most matches
+    top_matches = {}
     for t, kws in TOP_KEYWORDS.items():
         pos = find_positions(text, kws)
         if pos:
-            top_type = t
-            top_positions = pos
-            break
+            top_matches[t] = pos
 
+    if top_matches:
+        top_type = max(top_matches, key=lambda k: len(top_matches[k]))
+        top_positions = top_matches[top_type]
+
+    # Find all matching bottoms and pick the one with most matches
+    bottom_matches = {}
     for b, kws in BOTTOM_KEYWORDS.items():
         pos = find_positions(text, kws)
         if pos:
-            bottom_type = b
-            bottom_positions = pos
-            break
+            bottom_matches[b] = pos
+
+    if bottom_matches:
+        bottom_type = max(bottom_matches, key=lambda k: len(bottom_matches[k]))
+        bottom_positions = bottom_matches[bottom_type]
 
     color_positions = find_color_positions(text)
 
     top_color = assign_color(top_positions, color_positions)
     bottom_color = assign_color(bottom_positions, color_positions)
 
-    if gender and top_type and bottom_type:
-        return {
-            "gender": gender,
-            "top": {
-                "type": top_type,
-                "color": top_color
-            },
-            "bottom": {
-                "type": bottom_type,
-                "color": bottom_color
-            }
-        }
+    if not (gender and top_type and bottom_type):
+        return None, "missing_fields"
 
-    return None
+    if top_color is None or bottom_color is None:
+        return None, "missing_color"
+
+    return {
+        "gender": gender,
+        "top": {
+            "type": top_type,
+            "color": top_color
+        },
+        "bottom": {
+            "type": bottom_type,
+            "color": bottom_color
+        }
+    }, "ok"
 
 # ==================================================
 # 7. 主爬蟲（五欄位完全相同才去重）
@@ -168,7 +198,16 @@ def crawl_outfit_page(url):
 
 def crawl_wear():
     outfits = []
-    seen = set()
+    seen_urls = set()
+    stats = {
+        "links": 0,
+        "duplicate_url": 0,
+        "ok": 0,
+        "missing_fields": 0,
+        "missing_color": 0,
+        "http_error": 0,
+        "request_error": 0,
+    }
 
     for page in range(START_PAGE, END_PAGE + 1):
         print(f"\n→ Crawling WEAR page {page}")
@@ -184,28 +223,29 @@ def crawl_wear():
                 links.append(BASE_URL + href)
 
         links = list(dict.fromkeys(links))[:MAX_OUTFITS_PER_PAGE]
+        stats["links"] += len(links)
         print(f"  Found {len(links)} outfits")
 
         for i, url in enumerate(links, 1):
+            if url in seen_urls:
+                stats["duplicate_url"] += 1
+                continue
+            seen_urls.add(url)
+
             print(f"    [{i}/{len(links)}] parsing")
-            outfit = crawl_outfit_page(url)
-            if not outfit:
+            outfit, status = crawl_outfit_page(url)
+
+            if status != "ok":
+                stats[status] = stats.get(status, 0) + 1
                 continue
 
-            key = (
-                outfit["gender"],
-                outfit["top"]["type"],
-                outfit["top"]["color"],
-                outfit["bottom"]["type"],
-                outfit["bottom"]["color"]
-            )
-
-            if key in seen:
-                continue
-
-            seen.add(key)
+            stats["ok"] += 1
             outfits.append(outfit)
-            time.sleep(0.2)
+            time.sleep(0.5)
+
+    print("\nStats:")
+    for k, v in stats.items():
+        print(f"  {k}: {v}")
 
     return outfits
 
