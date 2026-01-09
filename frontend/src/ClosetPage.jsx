@@ -244,7 +244,7 @@ export default function ClosetPage({ go, user }) {
     <Shell
       go={go}
       title="我的衣櫃"
-      subtitle="上傳衣服照片、分類、顏色分析、穿著次數（已接 Supabase，重整不會消失）。"
+      subtitle="上傳衣服照片、分類、顏色分析、穿著次數。"
     >
       <div className="filterBar">
         <input
@@ -289,6 +289,9 @@ export default function ClosetPage({ go, user }) {
         </div>
       </div>
 
+      <div className="toolbar">
+        <button className="btn btnGhost" onClick={() => go('home')}>← 回主畫面</button>
+      </div>
 
       {error && (
         <div style={{ margin: '10px 0', color: '#b00020' }}>
