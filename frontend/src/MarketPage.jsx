@@ -7,7 +7,7 @@ import Shell from './Shell.jsx'
 const BUCKET = 'images' // 若你有 Supabase Storage bucket（可先不建）
 
 async function uploadMarketImage(file, userId) {
-  // 需要：Supabase Storage 建 bucket：images，且最好先設 public（demo 最快）
+  // 需要：Supabase Storage 建 bucket：images，先設 public
   const ext = file.name.split('.').pop()
   const path = `market/${userId}/${crypto.randomUUID()}.${ext}`
 
@@ -40,7 +40,7 @@ export default function MarketPage({ go, user }) {
   const [commentsLoading, setCommentsLoading] = useState(false)
   const [commentBusy, setCommentBusy] = useState(false)
 
-  // 搜尋（小加分，demo 很好用）
+  // 搜尋
   const [q, setQ] = useState('')
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase()
