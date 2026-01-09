@@ -280,16 +280,15 @@
   inset: 0;
   background: rgba(0,0,0,0.35);
 
-  /* ✅ 讓遮罩層本身可以上下滾動（關鍵） */
+  /* ✅ 讓 backdrop 自己可以上下滑 */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 
-  /* ✅ 不要垂直置中，改成從上開始，才不會底部被切掉 */
+  /* ✅ 不要垂直置中（置中會讓底部超出螢幕時卡住） */
   display: flex;
   align-items: flex-start;
   justify-content: center;
 
-  /* ✅ iPhone 底部安全區 */
   padding: 18px;
   padding-bottom: calc(18px + env(safe-area-inset-bottom));
   z-index: 50;
@@ -299,7 +298,7 @@
   width: 100%;
   max-width: 560px;
 
-  /* ✅ 讓 modal 不會超出螢幕高度 */
+  /* ✅ 關鍵：限制高度，並改成 column */
   max-height: calc(100dvh - 36px);
   display: flex;
   flex-direction: column;
@@ -311,7 +310,6 @@
   box-shadow: 0 22px 60px rgba(0,0,0,0.25);
   overflow: hidden;
 
-  /* ✅ 上下留白（可依喜好） */
   margin: 18px 0;
 }
 
@@ -329,11 +327,11 @@
   font-size: 20px;
 }
 
-/* ✅ 讓中間內容區可以滾動，Header/Footer 固定可見 */
 .modalBody {
+  /* ✅ 關鍵：中間內容區可以滾，header/footer 固定可見 */
+  flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  flex: 1;
 }
 
 .formGrid{
