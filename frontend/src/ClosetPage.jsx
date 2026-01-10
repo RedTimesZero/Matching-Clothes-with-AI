@@ -17,6 +17,54 @@ const COLOR_OPTIONS = [
   "rust", "sea green", "tan", "teal", "turquoise blue", "white", "yellow"
 ]
 
+function normalizeCategory(raw) {
+  const s = (raw || '').trim().toLowerCase()
+
+  const map = {
+    // 舊版本常見
+    't-shirt': 'tshirts',
+    'tshirts': 'tshirts',
+    'shirt': 'shirts',
+    'hoodie': 'sweatshirts',
+    'sweater': 'sweaters',
+    'jacket': 'jackets',
+    'jeans': 'jeans',
+    'wide pants': 'trousers',
+    'pants': 'trousers',
+    'shorts': 'shorts',
+    'skirt': 'skirts',
+    'dress': 'tunics',
+    'other': 'other',
+  }
+
+  const v = map[s] || s
+  return CATEGORY_OPTIONS.includes(v) ? v : 'other'
+}
+
+function normalizeColor(raw) {
+  const s = (raw || '').trim().toLowerCase()
+
+  const map = {
+    // 你之前說的對應
+    'dark blue': 'navy blue',
+    'navy': 'navy blue',
+
+    // 舊版本常見
+    'gray': 'grey',
+    'light blue': 'turquoise blue',
+  }
+
+  const v = map[s] || s
+  return COLOR_OPTIONS.includes(v) ? v : 'multi'
+}
+
+function prettyLabel(s) {
+  // 用於 UI 顯示：'navy blue' -> 'Navy Blue'
+  return (s || '')
+    .split(' ')
+    .map(w => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(' ')
+}
 
 
 // 把 DB row 轉成你卡片想用的格式
@@ -24,8 +72,8 @@ function rowToItem(row) {
   return {
     id: row.id,
     title: row.title,
-    category: row.category,
-    color: row.color,
+    category: normalizeCategory(row.category),
+    color: normalizeColor(row.color),
     worn: row.worn,
     image: row.image_url || '',
     image_path: row.image_path || null,
@@ -151,8 +199,8 @@ export default function ClosetPage({ go, user }) {
         .insert({
           user_id: user.id,
           title: form.title || '未命名衣服',
-          category: form.category,
-          color: form.color,
+          category: normalizeCategory(form.category),
+          color: normalizeColor(form.color),
           worn: form.worn ?? 0,
           image_url,
           image_path,
@@ -177,8 +225,8 @@ export default function ClosetPage({ go, user }) {
     try {
       const patch = {
         title: form.title || '未命名衣服',
-        category: form.category,
-        color: form.color,
+        category: normalizeCategory(form.category),
+        color: normalizeColor(form.color),
         worn: form.worn ?? 0,
       }
 
@@ -294,14 +342,19 @@ export default function ClosetPage({ go, user }) {
       <div className="filterRight">
         <select className="control" value={cat} onChange={(e) => setCat(e.target.value)}>
           <option value="all">All categories</option>
-          {CATEGORY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+          {CATEGORY_OPTIONS.map(opt => (
+            <option key={opt} value={opt}>{prettyLabel(opt)}</option>
+          ))}
+
           <option value="__legacy">Legacy/Other</option>
         </select>
 
         <select className="control" value={col} onChange={(e) => setCol(e.target.value)}>
           <option value="all">All colors</option>
-          {COLOR_OPTIONS.map(c => ( <option key={c} value={c}>{c}</option>
+          {COLOR_OPTIONS.map(c => (
+            <option key={c} value={c}>{prettyLabel(c)}</option>
           ))}
+
           <option value="__legacy">Legacy/Other</option>
         </select>
 
