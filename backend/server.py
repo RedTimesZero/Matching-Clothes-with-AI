@@ -8,36 +8,50 @@ import torch
 
 app = FastAPI()
 
-# --- 1. 設定 CORS (這一步超重要) ---
-# 因為你的 React 在 localhost:5173，Python 在 localhost:8000
-# 如果不加這個，瀏覽器會因為安全理由擋住連線
+# --- 1. 設定 CORS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 允許所有來源 (開發階段方便)，上線可改成 ["http://localhost:5173"]
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- 2. 載入模型 (伺服器啟動時只載入一次) ---
-print("正在載入 AI 模型...請稍候")
+# --- 2. 修改重點：全域變數設為 None (一開始不載入) ---
+model = None
+processor = None
 MODEL_NAME = "openai/clip-vit-base-patch32"
-model = CLIPModel.from_pretrained(MODEL_NAME)
-processor = CLIPProcessor.from_pretrained(MODEL_NAME)
-print("模型載入完成！")
+
+def get_model():
+    """
+    這就是「延遲載入」的核心函式。
+    只有被呼叫時，才會檢查模型在不在。
+    如果不在，現在才開始載入。
+    """
+    global model, processor
+    
+    if model is None:
+        print("⚠️ 第一次請求，正在載入 AI 模型 (這可能會花幾秒鐘)...")
+        model = CLIPModel.from_pretrained(MODEL_NAME)
+        processor = CLIPProcessor.from_pretrained(MODEL_NAME)
+        print("✅ 模型載入完成！")
+    
+    return model, processor
 
 def calculate_similarity(image1_bytes, image2_bytes):
     try:
-        # 直接從記憶體讀取圖片，不需要存成檔案
+        # 重點：要用的時候才呼叫 get_model() 拿模型
+        current_model, current_processor = get_model()
+
         img1 = Image.open(io.BytesIO(image1_bytes)).convert("RGB")
         img2 = Image.open(io.BytesIO(image2_bytes)).convert("RGB")
         
-        inputs1 = processor(images=img1, return_tensors="pt")
-        inputs2 = processor(images=img2, return_tensors="pt")
+        inputs1 = current_processor(images=img1, return_tensors="pt")
+        inputs2 = current_processor(images=img2, return_tensors="pt")
         
         with torch.no_grad():
-            feat1 = model.get_image_features(**inputs1)
-            feat2 = model.get_image_features(**inputs2)
+            feat1 = current_model.get_image_features(**inputs1)
+            feat2 = current_model.get_image_features(**inputs2)
             
         feat1 = feat1 / feat1.norm(p=2, dim=-1, keepdim=True)
         feat2 = feat2 / feat2.norm(p=2, dim=-1, keepdim=True)
@@ -51,7 +65,6 @@ def calculate_similarity(image1_bytes, image2_bytes):
 # --- 3. 建立 API 接口 ---
 @app.post("/compare")
 async def compare_images(file1: UploadFile = File(...), file2: UploadFile = File(...)):
-    # 讀取上傳的檔案內容
     img1_data = await file1.read()
     img2_data = await file2.read()
     
@@ -59,5 +72,4 @@ async def compare_images(file1: UploadFile = File(...), file2: UploadFile = File
     
     return {"similarity": score, "message": "success"}
 
-# --- 啟動指令 (寫在註解裡備忘) ---
 # uvicorn server:app --reload
