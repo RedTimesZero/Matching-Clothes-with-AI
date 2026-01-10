@@ -7,6 +7,10 @@ import torch.nn.functional as F
 import torch
 
 app = FastAPI()
+# --- 加入這段在 app = FastAPI() 之後 ---
+@app.get("/")
+def home():
+    return {"message": "Hello! AI Closet Backend is running!"}
 
 # --- 1. 設定 CORS ---
 app.add_middleware(
