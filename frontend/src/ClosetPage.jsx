@@ -5,14 +5,16 @@ import Shell from './Shell.jsx'
 const BUCKET = 'images'
 
 const CATEGORY_OPTIONS = [
-  "blouse","cardigan","coat","dress","hoodie","jacket","jeans","leggings",
-  "pants","shirt","shorts","skirt","sweater","t-shirt","top","vest"
+  "capris", "jackets", "jeans", "leggings", "shirts", "shorts", "skirts", 
+  "sweaters", "sweatshirts", "track pants", "trousers", "tshirts", "tunics"
 ]
 
 const COLOR_OPTIONS = [
-  "beige","black","blue","brown","burgundy","cream","gold","gray","green","grey",
-  "ivory","khaki","maroon","navy","olive","orange","pink","purple","red","rose",
-  "silver","tan","white","yellow"
+  "beige", "black", "blue", "brown", "burgundy", "charcoal", "coffee brown", 
+  "cream", "gold", "green", "grey", "grey melange", "khaki", "lavender", 
+  "lime green", "magenta", "maroon", "mauve", "multi", "mustard", "navy blue", 
+  "nude", "off white", "olive", "orange", "peach", "pink", "purple", "red", 
+  "rust", "sea green", "tan", "teal", "turquoise blue", "white", "yellow"
 ]
 
 
