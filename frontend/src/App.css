@@ -1,0 +1,662 @@
+/* ===== Home: full-bleed hero ===== */
+.home {
+  min-height: 100vh;
+  background-image: url("/BG.JPG"); /* 你 repo 裡有 public/BG.JPG，就用這個 */
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  color: #fff;
+}
+
+.home::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.homeInner {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Shared layout ===== */
+.shell {
+  min-height: 100vh;
+  background: #fff;
+  color: #4a2c1d;
+  font-family: Inter, sans-serif;
+}
+
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 28px 18px 60px 18px;
+}
+
+/* ===== Navbar (shared) ===== */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 40px;
+}
+
+.brand {
+  font-family: "Playfair Display", serif;
+  font-size: 22px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.navMenu {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.navBtn {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  padding: 8px 10px;
+  opacity: 0.92;
+  border-radius: 10px;
+  transition: opacity 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.navBtn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+/* Light navbar hover (白底頁面) */
+.navbarLight .navBtn:hover {
+  background: rgba(74, 44, 29, 0.08);
+}
+
+/* ===== Hero content ===== */
+.heroContent {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 40px 60px 40px;
+}
+
+.heroBox {
+  max-width: 740px;
+}
+
+.heroTitle {
+  font-family: "Playfair Display", serif;
+  font-size: 56px;
+  margin: 0 0 10px 0;
+  line-height: 1.05;
+  text-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+.heroSubtitle {
+  font-family: Inter, sans-serif;
+  font-size: 16px;
+  margin: 0 0 28px 0;
+  opacity: 0.92;
+  max-width: 560px;
+  text-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+.heroActions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.heroCardBtn {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.65);
+  color: #fff;
+  padding: 14px 18px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: Inter, sans-serif;
+  font-size: 15px;
+  transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  backdrop-filter: blur(6px);
+}
+
+.heroCardBtn:hover {
+  background: rgba(255,255,255,0.20);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.18);
+}
+
+/* ===== Page typography ===== */
+.pageTitle {
+  font-family: "Playfair Display", serif;
+  font-size: 34px;
+  margin: 10px 0 6px 0;
+}
+
+.pageSubtitle {
+  margin: 0 0 18px 0;
+  opacity: 0.85;
+}
+
+/* ===== Buttons ===== */
+.btn {
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.btnPrimary {
+  border: 1px solid #4a2c1d;
+  background: #4a2c1d;
+  color: #fff;
+}
+
+.btnPrimary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.10);
+}
+
+.btnGhost {
+  border: 1px solid #4a2c1d;
+  background: #fff;
+  color: #4a2c1d;
+}
+
+.btnGhost:hover {
+  background: rgba(74, 44, 29, 0.06);
+  transform: translateY(-1px);
+}
+
+/* ===== Market: grid cards ===== */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0 16px 0;
+  flex-wrap: wrap;
+}
+.spacer{ flex:1; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;              /* ✅ 沒這行就很容易黏在一起 */
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .grid { grid-template-columns: 1fr; }
+}
+
+.card {
+  border: 1px solid rgba(74, 44, 29, 0.25);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+  position: relative;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.10);
+}
+
+.cardImg {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+  background: #f4f2ef;
+}
+
+.cardBody {
+  padding: 12px 12px 14px 12px;
+}
+
+.cardTopRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cardTitle {
+  margin: 0;
+  font-weight: 600;
+}
+
+.badge {
+  border: 1px solid rgba(74, 44, 29, 0.35);
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.meta {
+  margin-top: 8px;
+  font-size: 13px;
+  opacity: 0.85;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.priceRow {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.price {
+  font-weight: 700;
+}
+
+/* ===== Modal (上架表單) ===== */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+
+  /* ✅ 讓 backdrop 自己可以上下滑 */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+
+  /* ✅ 不要垂直置中（置中會讓底部超出螢幕時卡住） */
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+
+  padding: 18px;
+  padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  z-index: 50;
+}
+
+.modal {
+  width: 100%;
+  max-width: 560px;
+
+  /* ✅ 關鍵：限制高度，並改成 column */
+  max-height: calc(100dvh - 36px);
+  display: flex;
+  flex-direction: column;
+
+  background: #fff;
+  color: #4a2c1d;
+  border-radius: 18px;
+  border: 1px solid rgba(74, 44, 29, 0.25);
+  box-shadow: 0 22px 60px rgba(0,0,0,0.25);
+  overflow: hidden;
+
+  margin: 18px 0;
+}
+
+.modalHead {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(74, 44, 29, 0.15);
+}
+
+.modalTitle {
+  margin: 0;
+  font-family: "Playfair Display", serif;
+  font-size: 20px;
+}
+
+.modalBody {
+  /* ✅ 關鍵：中間內容區可以滾，header/footer 固定可見 */
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.formGrid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;              /* ✅ 格子間距 */
+  margin-top: 10px;
+}
+
+@media (max-width: 560px) {
+  .formGrid { grid-template-columns: 1fr; }
+}
+
+.field label {
+  display: block;
+  font-size: 12px;
+  opacity: 0.85;
+  margin-bottom: 6px;
+}
+
+.field input, .field select {
+  width: 100%;
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(74, 44, 29, 0.25);
+  outline: none;
+}
+
+.field input:focus, .field select:focus {
+  border-color: rgba(74, 44, 29, 0.55);
+}
+
+.modalFoot {
+  padding: 12px 16px 16px 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.field{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;               /* ✅ label 和 input 的距離 */
+}
+
+.fieldFull{
+  grid-column: 1 / -1;
+}
+
+.field input,
+.field select{
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 手機/小螢幕變單欄 */
+@media (max-width: 720px){
+  .formGrid{
+    grid-template-columns: 1fr;
+  }
+}
+
+.previewImg{
+  margin-top: 10px;
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(74, 44, 29, 0.15);
+}
+
+/* === + card === */
+.addCard{
+  cursor: pointer;
+  border-style: dashed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  background: rgba(74, 44, 29, 0.02);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.addCard:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+.addCardInner{
+  text-align: center;
+  padding: 18px;
+}
+.addPlus{
+  font-size: 56px;
+  line-height: 1;
+  color: rgba(74, 44, 29, 0.75);
+}
+.addTitle{
+  margin-top: 8px;
+  font-weight: 700;
+}
+.addSub{
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: .8;
+}
+
+/* === card edit/delete === */
+.card{
+  position: relative;
+}
+
+.cardActions{
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity .15s ease, transform .15s ease;
+}
+
+.card:hover .cardActions{
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.iconBtn{
+  border: 1px solid rgba(74, 44, 29, 0.25);
+  background: rgba(255,255,255,0.9);
+  color: #4a2c1d;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.iconBtn:hover{
+  background: #4a2c1d;
+  color: white;
+}
+
+.iconBtn.danger:hover{
+  background: #8b2e2e;
+  border-color: #8b2e2e;
+  color: white;
+}
+
+/* ========= Filter Bar (Closet) ========= */
+.filterBar{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top: 12px;
+
+  padding: 12px;
+  border: 1px solid rgba(74, 44, 29, 0.15);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.7);
+}
+
+.filterRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-left: auto; /* 右側靠右 */
+}
+
+.control {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(74, 44, 29, 0.18);
+  background: #fff;
+  color: #4a2c1d;
+  outline: none;
+  font-size: 14px;
+  line-height: 40px;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+/* 讓 input 撐滿左側 */
+.filterBar > .control {
+  flex: 1;
+  min-width: 260px;
+}
+
+/* select 更像你的按鈕 */
+.control:hover {
+  border-color: rgba(74, 44, 29, 0.35);
+}
+
+.control:focus {
+  border-color: rgba(74, 44, 29, 0.55);
+  box-shadow: 0 0 0 4px rgba(74, 44, 29, 0.12);
+}
+
+/* count 變成小 badge 文案 */
+.filterCount {
+  padding: 0 10px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(74, 44, 29, 0.14);
+  background: rgba(74, 44, 29, 0.03);
+  color: rgba(74, 44, 29, 0.85);
+  font-size: 13px;
+}
+
+/* 手機版：上下排比較好看 */
+@media (max-width: 720px) {
+  .filterBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filterRight {
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+  .filterBar > .control {
+    width: 100%;
+  }
+}
+.control::placeholder {
+  color: rgba(74, 44, 29, 0.45);
+}
+.controlGrow{
+  flex: 1;
+  min-width: 220px;
+}
+/* ========= Auth Page ========= */
+.authPage{
+  min-height: 100vh;
+  background-image: url("/BG.JPG");
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  color: #fff;
+}
+
+/* 背景黑色遮罩 */
+.authPage::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.42);
+  pointer-events: none;
+}
+
+/* 置中容器 */
+.authCenter{
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* 白色玻璃卡片 */
+.authCard{
+  width: 100%;
+  max-width: 440px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.28);
+  background: rgba(255,255,255,0.86);
+  color: #4a2c1d;
+  box-shadow: 0 22px 60px rgba(0,0,0,0.28);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+.authHeader{
+  padding: 18px 18px 10px 18px;
+  border-bottom: 1px solid rgba(74, 44, 29, 0.12);
+}
+
+.authBrand{
+  font-family: "Playfair Display", serif;
+  font-size: 18px;
+  letter-spacing: 0.4px;
+  opacity: 0.9;
+}
+
+.authTitle{
+  font-family: "Playfair Display", serif;
+  font-size: 28px;
+  margin: 10px 0 6px 0;
+}
+
+.authSubtitle{
+  margin: 0 0 8px 0;
+  opacity: 0.8;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.authForm{
+  padding: 14px 18px 18px 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.authActions{
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.authError{
+  border: 1px solid rgba(176, 0, 32, 0.25);
+  background: rgba(176, 0, 32, 0.06);
+  color: #b00020;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.authHint{
+  margin-top: 8px;
+  font-size: 12px;
+  opacity: 0.7;
+}

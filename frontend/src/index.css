@@ -1,0 +1,19 @@
+/* 全站：白底 + 深棕色字 + 基本 reset */
+:root {
+  color-scheme: light;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+  color: #4a2c1d;
+  font-family: Inter, sans-serif;
+}
+
+#root {
+  min-height: 100vh;
+}

@@ -1,0 +1,1312 @@
+[
+  {
+    "top": {
+      "type": "shirt",
+      "color": "white"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "brown"
+    }
+  },
+  {
+    "top": {
+      "type": "vest",
+      "color": "brown"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "brown"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "cream"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "cream"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "pink"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "cream"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "black"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "brown"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "green"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "beige"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "white"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "hoodie",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "sweater",
+      "color": "purple"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "hoodie",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "black"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "green"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "sweater",
+      "color": "brown"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "sweater",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "black"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "black"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "brown"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "green"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "white"
+    }
+  },
+  {
+    "top": {
+      "type": "vest",
+      "color": "brown"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "hoodie",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "hoodie",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "white"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "green"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "green"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "hoodie",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "white"
+    }
+  },
+  {
+    "top": {
+      "type": "vest",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "beige"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "sweater",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "brown"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "purple"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "sweater",
+      "color": "black"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "green"
+    }
+  },
+  {
+    "top": {
+      "type": "hoodie",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "green"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "white"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "beige"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "green"
+    }
+  },
+  {
+    "top": {
+      "type": "hoodie",
+      "color": "black"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "black"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "purple"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "navy"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "white"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "vest",
+      "color": "green"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "green"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "green"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "hoodie",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "green"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "green"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "white"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "cream"
+    }
+  },
+  {
+    "top": {
+      "type": "vest",
+      "color": "green"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "brown"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "vest",
+      "color": "brown"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "brown"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "brown"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "vest",
+      "color": "beige"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "beige"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "red"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "pink"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "sweater",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "beige"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "white"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "orange"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "white"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "white"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "beige"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "beige"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "yellow"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "white"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "green"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "beige"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "beige"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "beige"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "green"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "brown"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "brown"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "sweater",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "vest",
+      "color": "black"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "navy"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "pink"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "white"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "white"
+    }
+  },
+  {
+    "top": {
+      "type": "vest",
+      "color": "black"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "navy"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "beige"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "green"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "yellow"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "vest",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "black"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "green"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "beige"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "black"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "vest",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "purple"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "orange"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "skirt",
+      "color": "cream"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "beige"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "green"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "white"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "beige"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "green"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "green"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "black"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "beige"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "beige"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "black"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "blue"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "green"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "orange"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "pink"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "green"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "brown"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "beige"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "green"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "sweater",
+      "color": "gray"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "green"
+    }
+  },
+  {
+    "top": {
+      "type": "hoodie",
+      "color": "black"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "white"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "green"
+    }
+  },
+  {
+    "top": {
+      "type": "shirt",
+      "color": "beige"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "gray"
+    }
+  },
+  {
+    "top": {
+      "type": "sweater",
+      "color": "brown"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "t-shirt",
+      "color": "purple"
+    },
+    "bottom": {
+      "type": "jeans",
+      "color": "blue"
+    }
+  },
+  {
+    "top": {
+      "type": "jacket",
+      "color": "brown"
+    },
+    "bottom": {
+      "type": "pants",
+      "color": "black"
+    }
+  }
+]
