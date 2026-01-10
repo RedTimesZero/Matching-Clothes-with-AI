@@ -78,6 +78,11 @@ export default function ClosetPage({ go, user }) {
   const [cat, setCat] = useState('all')
   const [col, setCol] = useState('all')
   const [sort, setSort] = useState('newest') // newest | wornDesc | wornAsc | titleAsc
+  //最少穿Top 3
+  const recommended = [...items]
+  .sort((a, b) => (a.worn ?? 0) - (b.worn ?? 0))
+  .slice(0, 3)
+
   // visibleItems useMemo
   const visibleItems = useMemo(() => {
     const keyword = q.trim().toLowerCase()
@@ -234,8 +239,31 @@ export default function ClosetPage({ go, user }) {
       setBusy(false)
     }
   }
+  async function listToMarket(it) {
+    // 你 demo 的衣服欄位是 image，不一定叫 image_url，所以我做了 fallback
+    const image_url = it.image_url ?? it.image ?? ''
 
-  // 讓「穿過幾次」更好用：一鍵 +1（也同步 DB）
+    const { error } = await supabase.from('market_listings').insert({
+      seller_id: user.id,
+      title: it.title ?? '未命名商品',
+      price: 300,              // 你可以改成你們預設價
+      size: 'M',               // 預設
+      condition: '9成新',       // 預設
+      tag: '衣櫃推薦',          // 讓交易區知道是推薦來的
+      image_url,
+      status: 'active',
+    })
+
+    if (error) {
+      alert('上架失敗：' + error.message)
+      return
+    }
+
+    alert('已上架到交易區！')
+    go('market')
+  }
+
+  // 一鍵 +1（也同步 DB）
   async function wornPlusOne(item) {
     await updateCloth(item.id, { ...item, worn: (item.worn || 0) + 1 })
   }
@@ -301,6 +329,22 @@ export default function ClosetPage({ go, user }) {
           顯示 {visibleItems.length} / {items.length}
         </div>
       </div>
+    </div>
+
+    <div style={{ margin: '12px 0' }}>
+      <h3 style={{ marginBottom: 8 }}>推薦你賣掉（最少穿）</h3>
+
+      {recommended.map(it => (
+        <div key={it.id} style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 8 }}>
+          <div style={{ flex: 1 }}>
+            {it.title}（穿過 {it.worn ?? 0} 次）
+          </div>
+
+          <button className="btn btnPrimary" onClick={() => listToMarket(it)}>
+            上架到交易區
+          </button>
+        </div>
+      ))}
     </div>
 
     {/* 原本的 error / loading / grid / modal 全部照舊 */}
@@ -459,15 +503,6 @@ function ClosetModal({ mode, initial, onClose, onSubmit }) {
               </select>
             </div>
 
-
-            <div className="field">
-              <label>顏色</label>
-              <select value={color} onChange={(e) => setColor(e.target.value)}>
-                {COLOR_OPTIONS.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
           </div>
         </div>
 
