@@ -660,3 +660,30 @@
   font-size: 12px;
   opacity: 0.7;
 }
+
+.statusRow{
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip{
+  border: 1px solid rgba(74, 44, 29, 0.25);
+  background: rgba(74, 44, 29, 0.03);
+  color: #4a2c1d;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.chip:hover{
+  background: rgba(74, 44, 29, 0.08);
+}
+
+.chip.active{
+  background: #4a2c1d;
+  border-color: #4a2c1d;
+  color: #fff;
+}

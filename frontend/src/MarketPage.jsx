@@ -58,7 +58,7 @@ export default function MarketPage({ go, user }) {
     setError('')
     const { data, error } = await supabase
       .from('market_listings')
-      .select('id,title,price,size,condition,tag,image_url,seller_id,created_at')
+      .select('id,title,price,size,condition,tag,image_url,seller_id,status,created_at')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -78,6 +78,7 @@ export default function MarketPage({ go, user }) {
       tag: r.tag,
       image: r.image_url,
       seller_id: r.seller_id,
+      status: r.status || 'available', 
       seller: r.seller_id === user?.id ? 'You' : (r.seller_id ? r.seller_id.slice(0, 6) : 'Unknown'),
       created_at: r.created_at,
     }))
@@ -85,6 +86,27 @@ export default function MarketPage({ go, user }) {
     setItems(mapped)
     setLoading(false)
   }
+async function setStatus(id, status) {
+  if (!user) return alert('請先登入')
+  setBusy(true)
+  setError('')
+
+  try {
+    const { error } = await supabase
+      .from('market_listings')
+      .update({ status })
+      .eq('id', id)
+      .eq('seller_id', user.id) // ✅ 只能改自己的
+
+    if (error) throw error
+
+    await fetchListings()
+  } catch (e) {
+    setError(e.message || String(e))
+  } finally {
+    setBusy(false)
+  }
+}
 
   async function createListing(form) {
     if (!user) return alert('請先登入才能上架')
@@ -312,6 +334,7 @@ export default function MarketPage({ go, user }) {
                 setModalOpen(true)
               }}
               onDelete={() => deleteListing(p.id)}
+              onSetStatus={(status) => setStatus(p.id, status)}   // ✅ 加這行
             />
           ))}
         </div>
@@ -356,17 +379,30 @@ export default function MarketPage({ go, user }) {
 /* ======================
    ProductCard：交易區卡片
 ====================== */
-function ProductCard({ item, isMine, onOpen, onEdit, onDelete }) {
+function ProductCard({ item, isMine, onOpen, onEdit, onDelete, onSetStatus }) {
   return (
     <div className="card">
       <img className="cardImg" alt={item.title} src={item.image} />
 
+      {/* 右上角：查看 / 編輯 / 刪除 */}
       <div className="cardActions">
-        <button className="iconBtn" onClick={onOpen} title="查看">View</button>
+        <button type="button" className="iconBtn" onClick={onOpen} title="查看">
+          View
+        </button>
+
         {isMine && (
           <>
-            <button className="iconBtn" onClick={onEdit} title="編輯">Edit</button>
-            <button className="iconBtn danger" onClick={onDelete} title="刪除">Delete</button>
+            <button type="button" className="iconBtn" onClick={onEdit} title="編輯">
+              Edit
+            </button>
+            <button
+              type="button"
+              className="iconBtn danger"
+              onClick={onDelete}
+              title="刪除"
+            >
+              Delete
+            </button>
           </>
         )}
       </div>
@@ -378,17 +414,52 @@ function ProductCard({ item, isMine, onOpen, onEdit, onDelete }) {
         </div>
 
         <div className="meta">
-          <span>賣家：{item.seller}</span>
           <span>尺寸：{item.size}</span>
           <span>狀態：{item.condition}</span>
+          {/* ✅ 顯示目前上架狀態（available/reserved/sold/hidden） */}
+          <span>上架：{item.status || 'available'}</span>
         </div>
 
         <div className="priceRow">
           <span className="price">NT$ {item.price}</span>
-          <button className="btn btnGhost" onClick={onOpen}>
+          <button type="button" className="btn btnGhost" onClick={onOpen}>
             查看 / 留言
           </button>
         </div>
+
+        {/* ✅ 只有自己的商品才顯示：狀態切換 */}
+        {isMine && (
+          <div className="statusRow">
+            <button
+              type="button"
+              className={`chip ${item.status === 'available' ? 'active' : ''}`}
+              onClick={() => onSetStatus?.('available')}
+            >
+              上架中
+            </button>
+            <button
+              type="button"
+              className={`chip ${item.status === 'reserved' ? 'active' : ''}`}
+              onClick={() => onSetStatus?.('reserved')}
+            >
+              保留
+            </button>
+            <button
+              type="button"
+              className={`chip ${item.status === 'sold' ? 'active' : ''}`}
+              onClick={() => onSetStatus?.('sold')}
+            >
+              已售
+            </button>
+            <button
+              type="button"
+              className={`chip ${item.status === 'hidden' ? 'active' : ''}`}
+              onClick={() => onSetStatus?.('hidden')}
+            >
+              隱藏
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
