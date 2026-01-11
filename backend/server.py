@@ -75,16 +75,16 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 try:
     print(f"正在載入分類模型... (類別: {NUM_CATS})")
     model = MultiHeadResNet(num_cats=NUM_CATS, num_cols=NUM_COLORS)
-    # 這裡記得確認 Model_Weights.pth 確實在 backend 資料夾裡
-    state_dict = torch.load("Model_Weights.pth", map_location=device)
+    # 這裡記得確認 model_weights.pth 確實在 backend 資料夾裡
+    state_dict = torch.load("model_weights.pth", map_location=device)
     model.load_state_dict(state_dict)
     model.to(device)
     model.eval()
     classifier = model
-    print("✅ Model_Weights.pth 載入成功！")
+    print("✅ model_weights.pth 載入成功！")
 except Exception as e:
     print(f"❌ 分類模型載入失敗: {e}")
-    print("💡 請確認 'Model_Weights.pth' 是否已複製到 backend 資料夾中")
+    print("💡 請確認 'model_weights.pth' 是否已複製到 backend 資料夾中")
 
 # 預處理
 transform_classify = transforms.Compose([

@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabaseClient.js'
 import Shell from './Shell.jsx'
 
+// API 地址：使用環境變數，否則報錯
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (() => { throw new Error("VITE_API_BASE_URL 環境變數未設定") })()
+
 function itemImage(it) {
   return it?.image_url || it?.image || "https://images.unsplash.com/photo-1520975958225-8d56346d1b60?auto=format&fit=crop&w=1200&q=60"
 }
@@ -74,10 +77,9 @@ export default function TodayPage({ go, user }) {
     return result.top
   }, [result])
 
-  /** * 🚀 核心功能：
-   * 1. 先辨識 (predict_type)
-   * 2. 再比對 (compare_url) - 沿用不卡頓邏輯
-   */
+  // 核心功能：
+  // 1. 先辨識 (predict_type) - 取得衣物類型與顏色
+  // 2. 再比對 (compare_url) - 沿用不卡頓邏輯
   async function analyzeWithAI() {
     if (!user?.id) return alert('請先登入才能分析')
     if (!closetCount) return alert('你的衣櫃目前是空的，無法進行比對')
@@ -95,7 +97,7 @@ export default function TodayPage({ go, user }) {
       formData.append('file', file)
 
       // 呼叫後端 model_weights.pth 進行辨識
-      const predRes = await fetch('http://127.0.0.1:8000/predict_type', {
+      const predRes = await fetch(`${API_BASE}/predict_type`, {
         method: 'POST',
         body: formData
       })
@@ -137,7 +139,7 @@ export default function TodayPage({ go, user }) {
           compareData.append('file1', file)
           compareData.append('url2', itemImage(item)) // 傳網址給後端下載，防止卡頓
 
-          const res = await fetch('http://127.0.0.1:8000/compare_url', {
+          const res = await fetch(`${API_BASE}/compare_url`, {
             method: 'POST',
             body: compareData
           })
