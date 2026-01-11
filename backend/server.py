@@ -10,9 +10,8 @@ import torch.nn.functional as F
 import json
 import os
 import sys
-
-# 新增 CLIP 需要的套件
-from transformers import CLIPProcessor, CLIPModel
+import numpy as np
+from skimage.metrics import structural_similarity as ssim
 
 app = FastAPI()
 
@@ -50,11 +49,6 @@ classifier = None
 CLASS_NAMES = None
 COLOR_NAMES = None
 
-# 全域變數 - CLIP
-clip_model = None
-clip_processor = None
-clip_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 # 裝置
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -65,57 +59,46 @@ transform_classify = transforms.Compose([
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-def load_clip_model():
-    """延遲載入 CLIP 模型"""
-    global clip_model, clip_processor
+# ==========================================
+# 2.1 SSIM 相似度計算函數
+# ==========================================
+def image_similarity_ssim(img1: Image.Image, img2: Image.Image) -> float:
+    """
+    用 SSIM 計算兩張圖片的相似度 (0-100%)
+    無需 AI 模型，記憶體佔用 <1MB
     
-    if clip_model is not None:
-        return
+    Args:
+        img1: PIL Image 物件
+        img2: PIL Image 物件
     
-    print("⚡ 正在載入 CLIP 模型 (openai/clip-vit-base-patch32)... 第一次會下載約 300MB")
+    Returns:
+        相似度分數 (0-100)
+    """
     try:
-        clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-        clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-        clip_model.eval()
-        clip_model.to(clip_device)
-        print("✅ CLIP 模型載入完成")
+        # 調整成相同尺寸 (224x224，與分類模型一致)
+        size = (224, 224)
+        img1_resized = img1.resize(size)
+        img2_resized = img2.resize(size)
+        
+        # 轉成灰階
+        img1_gray = img1_resized.convert('L')
+        img2_gray = img2_resized.convert('L')
+        
+        # 轉成 numpy array
+        arr1 = np.array(img1_gray, dtype=np.float32)
+        arr2 = np.array(img2_gray, dtype=np.float32)
+        
+        # 計算 SSIM (-1 到 1 之間，通常 0-1)
+        score = ssim(arr1, arr2, data_range=255.0)
+        
+        # 轉成 0-100%
+        similarity = max(0, min(100, score * 100))
+        
+        return similarity
+    
     except Exception as e:
-        print(f"❌ CLIP 模型載入失敗: {e}")
-        clip_model = None
-
-def get_clip_image_embedding(image: Image.Image) -> torch.Tensor:
-    """取得圖片的 CLIP embedding (512-dim, 已 L2 正規化)"""
-    load_clip_model()
-    
-    if clip_model is None:
-        raise RuntimeError("CLIP 模型載入失敗，請檢查網路或 transformers 安裝")
-    
-    inputs = clip_processor(
-        images=image,
-        return_tensors="pt"
-    )
-    
-    inputs = {k: v.to(clip_device) for k, v in inputs.items()}
-    
-    with torch.no_grad():
-        image_features = clip_model.get_image_features(**inputs)
-    
-    # L2 正規化 (CLIP 官方推薦)
-    image_features = image_features / image_features.norm(p=2, dim=-1, keepdim=True)
-    
-    return image_features.squeeze(0).cpu()
-
-def cosine_score(a: torch.Tensor, b: torch.Tensor) -> float:
-    """計算兩個向量的 cosine 相似度 (%)"""
-    if a.ndim != 1:
-        a = a.view(-1)
-    if b.ndim != 1:
-        b = b.view(-1)
-    
-    a = a / (a.norm(p=2) + 1e-8)
-    b = b / (b.norm(p=2) + 1e-8)
-    
-    return float(torch.dot(a, b).item() * 100)
+        print(f"❌ SSIM 計算錯誤: {e}")
+        return 0.0
 
 def load_class_mappings():
     """載入類別映射 JSON"""
@@ -228,17 +211,10 @@ async def compare_url(file1: UploadFile = File(...), url2: str = Form(...)):
         img2 = Image.open(io.BytesIO(r.content)).convert("RGB")
         print(f"✅ img2 尺寸: {img2.size}")
 
-        # 取得兩張圖的 CLIP embedding
-        print("🤖 計算 CLIP embedding...")
-        emb1 = get_clip_image_embedding(img1)
-        print(f"✅ emb1 shape: {emb1.shape}")
-        
-        emb2 = get_clip_image_embedding(img2)
-        print(f"✅ emb2 shape: {emb2.shape}")
-
-        # 計算相似度
-        score = cosine_score(emb1, emb2)
-        print(f"🎯 相似度分數: {score:.2f}%")
+        # 計算 SSIM 相似度（無需 CLIP 模型，記憶體佔用 <1MB）
+        print("🤖 計算 SSIM 相似度...")
+        score = image_similarity_ssim(img1, img2)
+        print(f"🎯 SSIM 相似度: {score:.2f}%")
         print("="*60 + "\n")
         
         return {
