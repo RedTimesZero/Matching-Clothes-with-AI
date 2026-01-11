@@ -111,20 +111,31 @@ def initialize_models():
         classifier = model
         print("✅ model_weights.pth 載入成功！")
         
-        # 載入 CLIP 模型
-        print("正在載入 CLIP 模型...")
-        CLIP_MODEL_NAME = "openai/clip-vit-base-patch32"
-        clip_model = CLIPModel.from_pretrained(CLIP_MODEL_NAME)
-        clip_processor = CLIPProcessor.from_pretrained(CLIP_MODEL_NAME)
-        print("✅ CLIP 模型載入成功！")
-        
         models_initialized = True
         print("=" * 50)
-        print("✅ 所有模型初始化完成！")
+        print("✅ 分類模型初始化完成！")
         print("=" * 50)
         
     except Exception as e:
         print(f"❌ 模型初始化失敗: {e}")
+        import traceback
+        traceback.print_exc()
+
+def initialize_clip_model():
+    """延遲初始化 CLIP 模型，只在比對時加載"""
+    global clip_model, clip_processor
+    
+    if clip_model is not None:
+        return
+    
+    print("正在載入 CLIP 模型...")
+    try:
+        CLIP_MODEL_NAME = "openai/clip-vit-base-patch32"
+        clip_model = CLIPModel.from_pretrained(CLIP_MODEL_NAME)
+        clip_processor = CLIPProcessor.from_pretrained(CLIP_MODEL_NAME)
+        print("✅ CLIP 模型載入成功！")
+    except Exception as e:
+        print(f"❌ CLIP 模型載入失敗: {e}")
         import traceback
         traceback.print_exc()
 
@@ -166,8 +177,11 @@ async def predict_type(file: UploadFile = File(...)):
 # 功能二：直接接收網址進行比對
 @app.post("/compare_url")
 async def compare_url(file1: UploadFile = File(...), url2: str = Form(...)):
-    # 延迟初始化
+    # 延遲初始化分類模型
     initialize_models()
+    
+    # 延遲初始化 CLIP 模型 (只在這裡用到)
+    initialize_clip_model()
     
     try:
         # 1. 讀取使用者上傳的圖
