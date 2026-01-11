@@ -26,12 +26,12 @@ const CATEGORY_OPTIONS = [
 export default function App() {
   const [page, setPage] = useState('home')
 
-  // ✅ 新增：登入狀態
+  // 新增：登入狀態
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
 
   useEffect(() => {
-    // 1) 一進來先讀 session
+    // 1) 先讀 session
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user ?? null)
       setAuthLoading(false)
@@ -47,13 +47,13 @@ export default function App() {
     }
   }, [])
 
-  // ✅ 還在讀登入狀態
+  // 還在讀登入狀態
   if (authLoading) return <div style={{ padding: 20 }}>Loading...</div>
 
-  // ✅ 沒登入就先顯示登入畫面
+  // 沒登入就先顯示登入畫面
   if (!user) return <AuthTest onLogin={setUser} />
 
-  // ✅ 下面開始：完全保留你原本的 router / UI
+  // 下面開始：完全保留你原本的 router / UI
   if (page === 'closet') return <ClosetPage go={setPage} user={user} />
   if (page === 'today') return <TodayPage go={setPage} user={user} />
   if (page === 'market') return <MarketPage go={setPage} user={user} />
@@ -67,7 +67,7 @@ export default function App() {
           <div className="heroBox">
             <h1 className="heroTitle">Dress smarter.</h1>
             <p className="heroSubtitle">
-              管理衣櫃、購物建議、把很少穿的衣服快速整理成二手上架清單。
+              AI智慧衣櫃 | 購物建議 | 衣物一鍵上架二手交易平台。
             </p>
 
             <div className="heroActions">
@@ -75,7 +75,7 @@ export default function App() {
                 進入我的衣櫃
               </button>
               <button className="heroCardBtn" onClick={() => setPage('today')}>
-                買衣服建議
+                購物智慧助手
               </button>
               <button className="heroCardBtn" onClick={() => setPage('market')}>
                 前往二手交易
@@ -105,7 +105,7 @@ function TopNav({ variant, go }) {
 
       <div className="navMenu">
         <button className="navBtn" onClick={() => go('closet')}>我的衣櫃</button>
-        <button className="navBtn" onClick={() => go('today')}>買衣服建議</button>
+        <button className="navBtn" onClick={() => go('today')}>購物智慧助手</button>
         <button className="navBtn" onClick={() => go('market')}>二手交易區</button>
       </div>
     </div>
