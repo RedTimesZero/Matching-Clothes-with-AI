@@ -2,24 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabaseClient.js'
 import Shell from './Shell.jsx'
 
-/** 建議：跟 ClosetPage 同一份選單，避免前後不一致 */
-const CATEGORY_OPTIONS = [
-  "blouse","cardigan","coat","dress","hoodie","jacket","jeans","leggings",
-  "pants","shirt","shorts","skirt","sweater","t-shirt","top","vest"
-]
-
-const COLOR_OPTIONS = [
-  "beige","black","blue","brown","burgundy","cream","gold","gray","green","grey",
-  "ivory","khaki","maroon","navy","olive","orange","pink","purple","red","rose",
-  "silver","tan","white","yellow"
-]
-
 function itemImage(it) {
   return it?.image_url || it?.image || "https://images.unsplash.com/photo-1520975958225-8d56346d1b60?auto=format&fit=crop&w=1200&q=60"
 }
 
 export default function TodayPage({ go, user }) {
-  // ====== closet load ======
+  // ====== 1. 衣櫃資料讀取 (保持不變) ======
   const [closet, setCloset] = useState([])
   const [loadingCloset, setLoadingCloset] = useState(true)
   const [error, setError] = useState('')
@@ -52,19 +40,20 @@ export default function TodayPage({ go, user }) {
     return () => { alive = false }
   }, [user?.id])
 
-  // ====== candidate form ======
-  const [title, setTitle] = useState('')
-  const [category, setCategory] = useState(CATEGORY_OPTIONS[0])
-  const [color, setColor] = useState(COLOR_OPTIONS[0])
-  const [imageUrl, setImageUrl] = useState('')
+  // ====== 2. 表單狀態 (已刪除不必要的欄位) ======
+  const [file, setFile] = useState(null)
   const [preview, setPreview] = useState('')
-  const [file, setFile] = useState(null) // 這是使用者上傳的新衣服檔案
+  
+  // 新增：用來存儲 AI 辨識出的結果
+  const [prediction, setPrediction] = useState(null) // { category: 'jeans', color: 'blue' }
 
   function handleFile(e) {
     const f = e.target.files?.[0]
     if (!f) return
     setFile(f)
     setPreview(URL.createObjectURL(f))
+    setPrediction(null) // 重選圖片時，清空舊的辨識結果
+    setResult(null)     // 清空舊的建議
   }
 
   useEffect(() => {
@@ -73,11 +62,10 @@ export default function TodayPage({ go, user }) {
     }
   }, [preview])
 
-  const previewSrc = preview || imageUrl
-
-  // ====== analysis result ======
+  // ====== 3. AI 分析邏輯 ======
   const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState(null) // { decision, maxSim, reasons[], top[] }
+  const [statusText, setStatusText] = useState('') // 用來顯示目前 AI 做到哪一步
+  const [result, setResult] = useState(null)
 
   const closetCount = closet.length
 
@@ -86,48 +74,77 @@ export default function TodayPage({ go, user }) {
     return result.top
   }, [result])
 
-  /** * 🚀 核心功能：呼叫 Python AI 進行比對 
-   * 原理：找出衣櫃中同類別的衣服，逐一傳給 Python 後端算相似度
+  /** * 🚀 核心功能：
+   * 1. 先辨識 (predict_type)
+   * 2. 再比對 (compare_url) - 沿用不卡頓邏輯
    */
   async function analyzeWithAI() {
     if (!user?.id) return alert('請先登入才能分析')
-    if (!closetCount) return alert('你的衣櫃目前是空的，先新增幾件衣服才好比對喔')
-    if (!file) return alert('請上傳一張圖片（目前 AI 需要實體圖片檔案才能分析）')
+    if (!closetCount) return alert('你的衣櫃目前是空的，無法進行比對')
+    if (!file) return alert('請上傳一張圖片')
 
     setBusy(true)
     setResult(null)
+    setPrediction(null)
     
     try {
-      // 1. 優化：只比對「相同類別」的衣服 (避免拿褲子去比外套，浪費時間)
-      // 如果該類別沒衣服，就比對全部
-      let targetItems = closet.filter(c => c.category === category)
-      if (targetItems.length === 0) targetItems = closet
+      // --- Phase 1: 辨識衣物類型與顏色 ---
+      setStatusText('🔍 AI 正在辨識衣物類型與顏色...')
+      
+      const formData = new FormData()
+      formData.append('file', file)
 
-      // 2. 準備比對結果陣列
-      const scoredItems = []
+      // 呼叫後端 model_weights.pth 進行辨識
+      const predRes = await fetch('http://127.0.0.1:8000/predict_type', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (!predRes.ok) throw new Error('分類模型連線失敗')
+      const predData = await predRes.json()
+      
+      // 取得辨識結果
+      const aiCategory = predData.category  // 例如 "Jeans"
+      const aiColor = predData.color        // 例如 "Blue"
+      
+      setPrediction({ category: aiCategory, color: aiColor })
+      setStatusText(`✅ 辨識完成！這是一件 ${aiColor} 的 ${aiCategory}`)
 
-      // 3. 逐一呼叫 Python API (使用 Promise.all 加速)
+      // --- Phase 2: 篩選衣櫃 (只比對同類別) ---
+      // 注意：這裡直接使用 AI 辨識出的 aiCategory 來過濾
+      let targetItems = closet.filter(c => 
+        c.category && c.category.toLowerCase() === aiCategory.toLowerCase()
+      )
+
+      if (targetItems.length === 0) {
+        // 如果衣櫃裡完全沒有這類衣服，直接給結果
+        setResult({
+          decision: '值得入手 ✨',
+          maxSim: 0,
+          reasons: [`你的衣櫃裡完全沒有 ${aiCategory}，這會是你的第一件！`],
+          top: []
+        })
+        setBusy(false)
+        return
+      }
+
+      setStatusText(`📂 正在衣櫃中搜尋 ${targetItems.length} 件同類衣物...`)
+
+      // --- Phase 3: 相似度比對 (沿用你指定的原始邏輯) ---
       const comparisonPromises = targetItems.map(async (item) => {
         try {
-          // 下載衣櫃裡的這張圖片變成 Blob (因為 Python 需要檔案流)
-          const itemImgRes = await fetch(itemImage(item))
-          const itemBlob = await itemImgRes.blob()
+          const compareData = new FormData()
+          compareData.append('file1', file)
+          compareData.append('url2', itemImage(item)) // 傳網址給後端下載，防止卡頓
 
-          // 建立 FormData
-          const formData = new FormData()
-          formData.append('file1', file)     // 使用者上傳的新衣服
-          formData.append('file2', itemBlob) // 衣櫃裡的舊衣服
-
-          // 呼叫 Python 後端
-          const res = await fetch('http://127.0.0.1:8000/compare', {
+          const res = await fetch('http://127.0.0.1:8000/compare_url', {
             method: 'POST',
-            body: formData
+            body: compareData
           })
           
-          if (!res.ok) throw new Error('API Error')
+          if (!res.ok) throw new Error('比對 API 錯誤')
           
           const data = await res.json()
-          // Python 回傳 0-100，我們轉成 0-1 方便前端處理
           const simScore = data.similarity / 100 
 
           return { ...item, sim: simScore }
@@ -137,163 +154,150 @@ export default function TodayPage({ go, user }) {
         }
       })
 
-      // 等待所有圖片比對完成
       const results = await Promise.all(comparisonPromises)
-      
-      // 排序：相似度高 -> 低
       results.sort((a, b) => b.sim - a.sim)
 
-      // 4. 產生決策邏輯 (根據 AI 分數)
+      // --- Phase 4: 決策邏輯 (保持不變) ---
       const maxSim = results[0]?.sim ?? 0
       const top = results.slice(0, 3)
 
       let decision = '可以買 ✅'
-      if (maxSim >= 0.60) decision = '千萬不要買 ⛔' // CLIP 模型 85% 其實就非常像了
-      else if (maxSim >= 0.45) decision = '考慮一下 ⚠️'
+      if (maxSim >= 0.80) decision = '千萬不要買 ⛔'
+      else if (maxSim >= 0.50) decision = '考慮一下 ⚠️'
 
       const reasons = []
-      if (maxSim >= 0.60) reasons.push('AI 發現衣櫃裡有幾乎一模一樣的款式！')
-      else if (maxSim >= 0.45) reasons.push('風格或版型高度雷同，可能會重複穿搭')
-      else if (maxSim < 0.30) reasons.push('你的衣櫃裡完全沒有這種衣服，是很好的新嘗試！')
+      if (maxSim >= 0.80) reasons.push(`AI 發現衣櫃裡有幾乎一模一樣的 ${aiCategory}！`)
+      else if (maxSim >= 0.50) reasons.push('風格或版型高度雷同，可能會重複穿搭')
+      else if (maxSim < 0.30) reasons.push(`這件 ${aiCategory} 風格很獨特，是你衣櫃裡少見的款式`)
       else reasons.push('有些微相似，視搭配需求而定')
 
-      // 額外：加上原本的穿著次數判斷
+      // 穿著頻率判斷
       const best = top[0]
-      if (best && maxSim > 0.6) {
-        if ((best.worn ?? 0) <= 1) reasons.push(`而且最像的那件「${best.title}」你幾乎沒穿過！`)
-        else reasons.push(`不過最像的那件「${best.title}」你很常穿，買這件當替換或許不錯`)
+      if (best && maxSim > 0.5) {
+        if ((best.worn ?? 0) <= 1) reasons.push(`相似度最高的「${best.title}」你幾乎沒穿過！`)
+        else reasons.push(`不過相似度最高的的那件「${best.title}」你很常穿，買這件當替換或許不錯`)
       }
 
       setResult({ decision, maxSim, reasons, top })
 
     } catch (err) {
       console.error(err)
-      alert("AI 分析發生錯誤，請確認 Python 伺服器 (uvicorn) 有沒有打開？")
+      alert("AI 分析發生錯誤，請確認後端是否已開啟？")
     } finally {
       setBusy(false)
+      // 稍微延遲清除狀態文字，讓使用者看得到「辨識完成」
+      if (!result) setStatusText('')
     }
   }
 
   return (
     <Shell
       go={go}
-      title="買衣服建議 (AI 版)"
-      subtitle="上傳你想買的衣服，AI 會掃描你的衣櫃找出相似款。"
+      title="智慧購物助手"
+      subtitle="上傳你想購買的衣服，AI 掃描衣櫃並檢視你是否有類似風格的衣物。"
     >
-      {/* 工具列：回首頁 */}
       <div className="toolbar toolbarRow">
         <button className="btn btnGhost" onClick={() => go('home')}>← 回主畫面</button>
         <div className="spacer" />
         <div style={{ opacity: 0.75, fontSize: 14 }}>
-          衣櫃件數：{loadingCloset ? '讀取中...' : closetCount}
+          衣櫃總數：{loadingCloset ? '...' : closetCount}
         </div>
       </div>
 
       {error && (
-        <div style={{ marginTop: 10, padding: 10, border: '1px solid rgba(139,46,46,.35)', borderRadius: 12 }}>
-          <strong style={{ color: '#8b2e2e' }}>Error：</strong> {error}
+        <div style={{ marginTop: 10, padding: 10, border: '1px solid #8b2e2e', borderRadius: 8, color: '#8b2e2e' }}>
+          Error: {error}
         </div>
       )}
 
-      {/* ===== 表單卡 ===== */}
+      {/* ===== 上傳與操作區 ===== */}
       <div className="card" style={{ marginTop: 14 }}>
-        {previewSrc ? (
-          <img className="cardImg" alt="candidate" src={previewSrc} />
-        ) : (
-          <div
-            style={{
-              height: 180,
-              display: 'grid',
-              placeItems: 'center',
-              background: '#f4f2ef',
-              color: 'rgba(74,44,29,0.7)',
-              fontSize: 14
+        <div className="cardBody">
+          
+          {/* 圖片預覽區 */}
+          <div style={{ textAlign: 'center', marginBottom: 20 }}>
+            {preview ? (
+              <img 
+                src={preview} 
+                alt="preview" 
+                style={{ maxWidth: '100%', maxHeight: 250, borderRadius: 8, objectFit: 'contain' }} 
+              />
+            ) : (
+              <div style={{ height: 150, background: '#f5f5f5', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
+                📷 請上傳照片
+              </div>
+            )}
+          </div>
+
+          {/* AI 狀態顯示條 */}
+          {(busy || statusText) && (
+            <div style={{ 
+              marginBottom: 15, 
+              padding: '8px 12px', 
+              background: busy ? '#e3f2fd' : '#e8f5e9', 
+              color: busy ? '#1565c0' : '#2e7d32',
+              borderRadius: 6,
+              fontSize: 14,
+              textAlign: 'center',
+              fontWeight: 500
+            }}>
+              {statusText || '準備就緒'}
+            </div>
+          )}
+
+          {/* 辨識結果顯示 (如果有) */}
+          {prediction && !busy && (
+            <div style={{ marginBottom: 15, textAlign: 'center' }}>
+              <span className="badge" style={{ fontSize: 14, padding: '6px 12px', background: '#333', color: '#fff' }}>
+                AI 辨識結果：{prediction.color} {prediction.category}
+              </span>
+            </div>
+          )}
+
+          <div style={{ marginBottom: 14 }}>
+          <label 
+            htmlFor="file-upload" 
+            className="btn btnPrimary" 
+            style={{ 
+              width: '100%', 
+              display: 'block', 
+              textAlign: 'center', 
+              cursor: 'pointer',
+              boxSizing: 'border-box' 
             }}
           >
-            （請先上傳照片以進行 AI 分析）
-          </div>
-        )}
-
-        <div className="cardBody">
-          <div className="cardTopRow">
-            <p className="cardTitle" style={{ margin: 0 }}>輸入想買的衣服</p>
-            <span className="badge">AI Ready</span>
-          </div>
-
-          <div className="formGrid" style={{ marginTop: 12 }}>
-            <div className="field fieldFull">
-              <label>上傳照片（AI 分析必填）</label>
-              <input type="file" accept="image/*" onChange={handleFile} />
-            </div>
-
-            {/* 隱藏：雖然沒用到但為了版面好看保留網址輸入框 */}
-            <div className="field fieldFull" style={{display: 'none'}}>
-              <label>圖片網址</label>
-              <input
-                className="control"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-              />
-            </div>
-
-            <div className="field">
-              <label>名稱（選填）</label>
-              <input
-                className="control"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="例如：Uniqlo 外套"
-              />
-            </div>
-
-            <div className="field">
-              <label>類別（用於加速篩選）</label>
-              <select className="control" value={category} onChange={(e) => setCategory(e.target.value)}>
-                {CATEGORY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-              </select>
-            </div>
-
-            <div className="field">
-              <label>顏色</label>
-              <select className="control" value={color} onChange={(e) => setColor(e.target.value)}>
-                {COLOR_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-          </div>
+            {preview ? '更換照片' : '上傳照片'}
+          </label>
+          <input 
+            id="file-upload" 
+            type="file" 
+            accept="image/*" 
+            onChange={handleFile} 
+            style={{ display: 'none' }} 
+          />
+        </div>
 
           <div className="toolbar" style={{ marginTop: 14 }}>
             <button
               className="btn btnPrimary"
-              disabled={busy || loadingCloset}
+              disabled={busy || !file || loadingCloset}
               onClick={analyzeWithAI}
+              style={{ width: '100%' }} // 讓按鈕滿版
             >
-              {busy ? 'AI 正在掃描衣櫃...' : '開始分析'}
-            </button>
-
-            <button
-              className="btn btnGhost"
-              onClick={() => {
-                setTitle('')
-                setCategory(CATEGORY_OPTIONS[0])
-                setColor(COLOR_OPTIONS[0])
-                setImageUrl('')
-                setPreview('')
-                setFile(null)
-                setResult(null)
-              }}
-            >
-              清除
+              {busy ? 'AI 思考中...' : '開始分析決策'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* ===== 結果卡 ===== */}
+      {/* ===== 結果建議區 ===== */}
       {result && (
-        <div className="card" style={{ marginTop: 18 }}>
+        <div className="card" style={{ marginTop: 18, border: result.maxSim >= 0.8 ? '2px solid #ef5350' : '1px solid #ddd' }}>
           <div className="cardBody">
             <div className="cardTopRow">
-              <p className="cardTitle" style={{ margin: 0 }}>AI 建議：{result.decision}</p>
+              <p className="cardTitle" style={{ fontSize: 18, color: result.maxSim >= 0.8 ? '#c62828' : '#2e7d32' }}>
+                {result.decision}
+              </p>
               <span className="badge">
                 最高相似度 {Math.round((result.maxSim || 0) * 100)}%
               </span>
@@ -305,33 +309,35 @@ export default function TodayPage({ go, user }) {
               ))}
             </div>
 
-            <div style={{ marginTop: 14, fontWeight: 700 }}>
-              衣櫃裡最像的 3 件：
-            </div>
-
-            <div className="grid" style={{ marginTop: 10 }}>
-              {topSimilar.map((it) => (
-                <div key={it.id} className="card">
-                  <img className="cardImg" alt={it.title} src={itemImage(it)} />
-                  <div className="cardBody">
-                    <div className="cardTopRow">
-                      <p className="cardTitle">{it.title}</p>
-                      {/* 根據分數顯示不同顏色的標籤 */}
-                      <span className="badge" style={{ 
-                        background: it.sim > 0.60 ? '#8b2e2e' : (it.sim > 0.6 ? '#d97706' : '#eee'),
-                        color: it.sim > 0.45 ? '#fff' : '#333'
-                      }}>
-                        {Math.round((it.sim || 0) * 100)}%
-                      </span>
-                    </div>
-                    <div className="meta">
-                      <span>{it.category}</span>
-                      <span>穿過 {it.worn ?? 0} 次</span>
-                    </div>
-                  </div>
+            {result.top.length > 0 && (
+              <>
+                <div style={{ marginTop: 14, fontWeight: 700, fontSize: 14 }}>
+                  因為你有這些很像的衣服：
                 </div>
-              ))}
-            </div>
+                <div className="grid" style={{ marginTop: 10 }}>
+                  {topSimilar.map((it) => (
+                    <div key={it.id} className="card" style={{ marginBottom: 0 }}>
+                      <img className="cardImg" alt={it.title} src={itemImage(it)} />
+                      <div className="cardBody">
+                        <div className="cardTopRow">
+                          <p className="cardTitle" style={{ fontSize: 13 }}>{it.title || '未命名'}</p>
+                          <span className="badge" style={{ 
+                            background: it.sim > 0.80 ? '#8b2e2e' : '#eee',
+                            color: it.sim > 0.80 ? '#fff' : '#333',
+                            fontSize: 11
+                          }}>
+                            {Math.round((it.sim || 0) * 100)}%
+                          </span>
+                        </div>
+                        <div className="meta" style={{ fontSize: 11 }}>
+                          穿過 {it.worn ?? 0} 次
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
