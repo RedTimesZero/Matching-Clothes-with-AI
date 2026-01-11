@@ -198,20 +198,47 @@ async def predict_type(file: UploadFile = File(...)):
 
 @app.post("/compare_url")
 async def compare_url(file1: UploadFile = File(...), url2: str = Form(...)):
+    print("\n" + "="*60)
+    print("📸 收到 /compare_url 請求")
+    print(f"🔗 url2: {url2[:80]}...")
+    
     if not HF_API_TOKEN:
+        print("❌ HF_API_TOKEN 未設定")
         return {"similarity": 0, "message": "HF_API_TOKEN not set"}
 
     try:
-        img1 = Image.open(io.BytesIO(await file1.read())).convert("RGB")
+        # 讀取上傳圖片
+        file1_data = await file1.read()
+        print(f"✅ file1 大小: {len(file1_data)} bytes")
+        img1 = Image.open(io.BytesIO(file1_data)).convert("RGB")
+        print(f"✅ img1 尺寸: {img1.size}")
+        
+        # 下載衣櫃圖片
+        print(f"⬇️  正在下載 url2...")
         r = requests.get(url2, timeout=10)
         r.raise_for_status()
+        print(f"✅ url2 下載成功: {len(r.content)} bytes, status={r.status_code}")
         img2 = Image.open(io.BytesIO(r.content)).convert("RGB")
+        print(f"✅ img2 尺寸: {img2.size}")
 
+        # 呼叫 HF API 取得 embedding
+        print("🤖 呼叫 HF API 取得 embedding...")
         emb1 = hf_image_embedding(pil_to_bytes(img1))
+        print(f"✅ emb1 shape: {emb1.shape}, norm: {emb1.norm().item():.4f}")
+        
         emb2 = hf_image_embedding(pil_to_bytes(img2))
+        print(f"✅ emb2 shape: {emb2.shape}, norm: {emb2.norm().item():.4f}")
 
+        # 計算相似度
         score = cosine_score(emb1, emb2)
+        print(f"🎯 相似度分數: {score:.2f}%")
+        print("="*60 + "\n")
+        
         return {"similarity": score, "message": "success"}
 
     except Exception as e:
+        print(f"❌ 比對錯誤: {e}")
+        import traceback
+        traceback.print_exc()
+        print("="*60 + "\n")
         return {"similarity": 0, "message": str(e)}
