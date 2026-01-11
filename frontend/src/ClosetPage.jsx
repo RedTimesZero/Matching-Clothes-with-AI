@@ -5,66 +5,95 @@ import Shell from './Shell.jsx'
 const BUCKET = 'images'
 
 const CATEGORY_OPTIONS = [
-  "capris", "jackets", "jeans", "leggings", "shirts", "shorts", "skirts", 
-  "sweaters", "sweatshirts", "track pants", "trousers", "tshirts", "tunics"
-]
+  "Capris","Jackets","Jeans","Leggings","Shirts","Shorts","Skirts",
+  "Sweaters","Sweatshirts","Track Pants","Trousers","Tshirts","Tunics"
+];
 
 const COLOR_OPTIONS = [
-  "beige", "black", "blue", "brown", "burgundy", "charcoal", "coffee brown", 
-  "cream", "gold", "green", "grey", "grey melange", "khaki", "lavender", 
-  "lime green", "magenta", "maroon", "mauve", "multi", "mustard", "navy blue", 
-  "nude", "off white", "olive", "orange", "peach", "pink", "purple", "red", 
-  "rust", "sea green", "tan", "teal", "turquoise blue", "white", "yellow"
-]
+  "Beige","Black","Blue","Brown","Burgundy","Charcoal","Coffee Brown","Cream",
+  "Gold","Green","Grey","Grey Melange","Khaki","Lavender","Lime Green","Magenta",
+  "Maroon","Mauve","Multi","Mustard","Navy Blue","Nude","Off White","Olive",
+  "Orange","Peach","Pink","Purple","Red","Rust","Sea Green","Tan","Teal",
+  "Turquoise Blue","White","Yellow"
+];
 
-function normalizeCategory(raw) {
+// 先做一個 lower->canonical 的 lookup（大小寫無關都能對到）
+const CATEGORY_LOOKUP = Object.fromEntries(
+  CATEGORY_OPTIONS.map(x => [x.toLowerCase(), x])
+)
+const COLOR_LOOKUP = Object.fromEntries(
+  COLOR_OPTIONS.map(x => [x.toLowerCase(), x])
+)
+
+// fallback：一定要是 options 內存在的值
+const FALLBACK_CATEGORY =
+  CATEGORY_LOOKUP['other'] || CATEGORY_LOOKUP['tunics'] || CATEGORY_OPTIONS[0]
+
+const FALLBACK_COLOR =
+  COLOR_LOOKUP['multi'] || COLOR_LOOKUP['black'] || COLOR_OPTIONS[0]
+
+export function normalizeCategory(raw) {
   const s = (raw || '').trim().toLowerCase()
+  if (!s) return FALLBACK_CATEGORY
 
-  const map = {
-    // 舊版本常見
+  // legacy / 舊資料映射：key 是舊值（小寫），value 也是「小寫 key」，最後用 LOOKUP 轉成正確大小寫
+  const legacy = {
     't-shirt': 'tshirts',
-    'tshirts': 'tshirts',
+    't shirt': 'tshirts',
+    'tshirt': 'tshirts',
+    'tee': 'tshirts',
+
     'shirt': 'shirts',
     'hoodie': 'sweatshirts',
     'sweater': 'sweaters',
     'jacket': 'jackets',
     'jeans': 'jeans',
+
     'wide pants': 'trousers',
     'pants': 'trousers',
+
+    'short': 'shorts',
     'shorts': 'shorts',
     'skirt': 'skirts',
+
     'dress': 'tunics',
     'other': 'other',
+    'legacy': 'other',
   }
 
-  const v = map[s] || s
-  return CATEGORY_OPTIONS.includes(v) ? v : 'other'
+  const key = legacy[s] || s
+  return CATEGORY_LOOKUP[key] || FALLBACK_CATEGORY
 }
 
-function normalizeColor(raw) {
+export function normalizeColor(raw) {
   const s = (raw || '').trim().toLowerCase()
+  if (!s) return FALLBACK_COLOR
 
-  const map = {
-    // 你之前說的對應
+  const legacy = {
     'dark blue': 'navy blue',
     'navy': 'navy blue',
+    'navy blue': 'navy blue',
 
-    // 舊版本常見
     'gray': 'grey',
+    'grey': 'grey',
+
     'light blue': 'turquoise blue',
+
+    'offwhite': 'off white',
+    'ivory': 'off white',
   }
 
-  const v = map[s] || s
-  return COLOR_OPTIONS.includes(v) ? v : 'multi'
+  const key = legacy[s] || s
+  return COLOR_LOOKUP[key] || FALLBACK_COLOR
 }
 
-function prettyLabel(s) {
-  // 用於 UI 顯示：'navy blue' -> 'Navy Blue'
-  return (s || '')
-    .split(' ')
-    .map(w => (w ? w[0].toUpperCase() + w.slice(1) : w))
-    .join(' ')
+// UI 顯示用：把亂輸入也變成 canonical（有就轉，沒有就原樣）
+export function prettyLabel(raw) {
+  const s = (raw || '').trim()
+  if (!s) return ''
+  return COLOR_LOOKUP[s.toLowerCase()] || CATEGORY_LOOKUP[s.toLowerCase()] || s
 }
+
 
 
 // 把 DB row 轉成你卡片想用的格式
