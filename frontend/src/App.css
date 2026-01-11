@@ -1,7 +1,7 @@
 /* ===== Home: full-bleed hero ===== */
 .home {
   min-height: 100vh;
-  background-image: url("/BG.JPG"); /* 你 repo 裡有 public/BG.JPG，就用這個 */
+  background-image: url("/BG.JPG"); 
   background-size: cover;
   background-position: center;
   position: relative;
@@ -195,7 +195,7 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 24px;              /* ✅ 沒這行就很容易黏在一起 */
+  gap: 24px;              /* 沒這行就很容易黏在一起 */
   align-items: start;
 }
 
@@ -280,11 +280,11 @@
   inset: 0;
   background: rgba(0,0,0,0.35);
 
-  /* ✅ 讓 backdrop 自己可以上下滑 */
+  /* 讓 backdrop 自己可以上下滑 */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 
-  /* ✅ 不要垂直置中（置中會讓底部超出螢幕時卡住） */
+  /* 不要垂直置中，會讓底部超出螢幕時卡住 */
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -328,16 +328,16 @@
 }
 
 .modalBody {
-  /* ✅ 關鍵：中間內容區可以滾，header/footer 固定可見 */
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  padding: 20px 24px;
 }
 
 .formGrid{
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;              /* ✅ 格子間距 */
+  gap: 14px;              /* 格子間距 */
   margin-top: 10px;
 }
 
@@ -374,7 +374,7 @@
 .field{
   display: flex;
   flex-direction: column;
-  gap: 6px;               /* ✅ label 和 input 的距離 */
+  gap: 6px;               /* label 和 input 的距離 */
 }
 
 .fieldFull{

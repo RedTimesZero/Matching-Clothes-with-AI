@@ -75,7 +75,7 @@ export default function App() {
                 進入我的衣櫃
               </button>
               <button className="heroCardBtn" onClick={() => setPage('today')}>
-                購物智慧助手
+                智慧購物助手
               </button>
               <button className="heroCardBtn" onClick={() => setPage('market')}>
                 前往二手交易
@@ -105,7 +105,7 @@ function TopNav({ variant, go }) {
 
       <div className="navMenu">
         <button className="navBtn" onClick={() => go('closet')}>我的衣櫃</button>
-        <button className="navBtn" onClick={() => go('today')}>購物智慧助手</button>
+        <button className="navBtn" onClick={() => go('today')}>智慧購物助手</button>
         <button className="navBtn" onClick={() => go('market')}>二手交易區</button>
       </div>
     </div>
