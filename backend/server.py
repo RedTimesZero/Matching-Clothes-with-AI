@@ -6,7 +6,6 @@ from torchvision import models, transforms
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
-from transformers import CLIPProcessor, CLIPModel
 import torch.nn.functional as F
 import json
 import os
@@ -45,8 +44,6 @@ class MultiHeadResNet(nn.Module):
 
 # 全域變數
 classifier = None
-clip_model = None
-clip_processor = None
 cat_map = None
 color_map = None
 CLASS_NAMES = None
@@ -61,6 +58,45 @@ transform_classify = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
+
+# Hugging Face API 設定
+HF_API_URL = os.getenv(
+    "HF_API_URL",
+    "https://api-inference.huggingface.co/pipeline/feature-extraction/openai/clip-vit-base-patch32"
+)
+HF_API_TOKEN = os.getenv("HF_API_TOKEN")
+HF_HEADERS = {"Authorization": f"Bearer {HF_API_TOKEN}"} if HF_API_TOKEN else {}
+
+def pil_to_bytes(img):
+    """Convert PIL image to bytes for HTTP upload."""
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+def hf_image_embedding(image_bytes):
+    """Call Hugging Face Inference API to get image embedding."""
+    if not HF_API_TOKEN:
+        raise RuntimeError("HF_API_TOKEN not set")
+    headers = {"Content-Type": "application/octet-stream", **HF_HEADERS}
+    resp = requests.post(HF_API_URL, headers=headers, data=image_bytes, timeout=30)
+    if resp.status_code != 200:
+        raise RuntimeError(f"HF API error {resp.status_code}: {resp.text}")
+    data = resp.json()
+    emb = torch.tensor(data[0], dtype=torch.float32)
+    if emb.ndim > 1:
+        emb = emb.view(emb.shape[0], -1)
+    emb = emb.squeeze(0)
+    return emb
+
+def cosine_score(a, b):
+    """Cosine similarity (%) between two 1-D tensors."""
+    if a.ndim != 1:
+        a = a.view(-1)
+    if b.ndim != 1:
+        b = b.view(-1)
+    a = a / (a.norm(p=2) + 1e-8)
+    b = b / (b.norm(p=2) + 1e-8)
+    return float(torch.dot(a, b).item() * 100)
 
 def load_class_mappings():
     """載入 JSON 設定檔"""
@@ -121,26 +157,6 @@ def get_classifier_model():
 
     return classifier, CLASS_NAMES, COLOR_NAMES
 
-def get_clip_model():
-    """
-    取得 CLIP 模型。如果還沒載入，現在才載入。
-    """
-    global clip_model, clip_processor
-    
-    if clip_model is not None:
-        return clip_model, clip_processor
-        
-    print("⚡ 正在初始化 CLIP 模型...")
-    try:
-        CLIP_NAME = "openai/clip-vit-base-patch32"
-        clip_model = CLIPModel.from_pretrained(CLIP_NAME)
-        clip_processor = CLIPProcessor.from_pretrained(CLIP_NAME)
-        print("✅ CLIP 模型載入成功")
-    except Exception as e:
-        print(f"❌ CLIP 載入失敗: {e}")
-        
-    return clip_model, clip_processor
-
 # ==========================================
 # 3. API 接口
 # ==========================================
@@ -182,41 +198,20 @@ async def predict_type(file: UploadFile = File(...)):
 
 @app.post("/compare_url")
 async def compare_url(file1: UploadFile = File(...), url2: str = Form(...)):
-    # ⚠️ 關鍵修改：這裡只呼叫 CLIP，絕對不要呼叫 ResNet (initialize_models)
-    # 這樣可以避免記憶體爆掉
-    c_model, c_processor = get_clip_model()
-    
-    if c_model is None:
-        return {"similarity": 0, "message": "CLIP model not available"}
+    if not HF_API_TOKEN:
+        return {"similarity": 0, "message": "HF_API_TOKEN not set"}
 
     try:
-        # 1. 讀取使用者上傳
-        img1_data = await file1.read()
-        img1 = Image.open(io.BytesIO(img1_data)).convert("RGB")
-        
-        # 2. 下載連結圖片
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        resp = requests.get(url2, headers=headers, timeout=10)
-        
-        if resp.status_code != 200:
-            return {"similarity": 0, "message": "Download failed"}
-            
-        img2 = Image.open(io.BytesIO(resp.content)).convert("RGB")
-        
-        # 3. 計算相似度
-        inputs1 = c_processor(images=img1, return_tensors="pt")
-        inputs2 = c_processor(images=img2, return_tensors="pt")
-        
-        with torch.no_grad():
-            feat1 = c_model.get_image_features(**inputs1)
-            feat2 = c_model.get_image_features(**inputs2)
-            
-        feat1 = feat1 / feat1.norm(p=2, dim=-1, keepdim=True)
-        feat2 = feat2 / feat2.norm(p=2, dim=-1, keepdim=True)
-        
-        score = F.cosine_similarity(feat1, feat2).item() * 100
+        img1 = Image.open(io.BytesIO(await file1.read())).convert("RGB")
+        r = requests.get(url2, timeout=10)
+        r.raise_for_status()
+        img2 = Image.open(io.BytesIO(r.content)).convert("RGB")
+
+        emb1 = hf_image_embedding(pil_to_bytes(img1))
+        emb2 = hf_image_embedding(pil_to_bytes(img2))
+
+        score = cosine_score(emb1, emb2)
         return {"similarity": score, "message": "success"}
-        
+
     except Exception as e:
-        print(f"比對錯誤: {e}")
         return {"similarity": 0, "message": str(e)}
