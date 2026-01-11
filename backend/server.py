@@ -12,10 +12,6 @@ import json
 import os
 import sys
 
-print("=" * 50)
-print("🚀 [DEBUG] server.py 開始加載")
-print("=" * 50)
-
 app = FastAPI()
 
 # --- 設定 CORS ---
@@ -63,62 +59,74 @@ def load_class_mappings():
     
     return cat_map, color_map
 
-# 加載映射
-print("正在加載類別映射...")
-try:
-    cat_map, color_map = load_class_mappings()
-    CLASS_NAMES = [cat_map[i] for i in sorted(cat_map.keys())]
-    COLOR_NAMES = [color_map[i] for i in sorted(color_map.keys())]
-    NUM_CATS = len(CLASS_NAMES)
-    NUM_COLORS = len(COLOR_NAMES)
-    print(f"✅ 已加載 {NUM_CATS} 種服裝類別和 {NUM_COLORS} 種顏色")
-except Exception as e:
-    print(f"❌ 加載類別映射失敗: {e}")
-    import traceback
-    traceback.print_exc()
-    sys.exit(1)
-
-# 載入分類模型
+# 延遲初始化變量
 classifier = None
+clip_model = None
+clip_processor = None
+cat_map = None
+color_map = None
+CLASS_NAMES = None
+COLOR_NAMES = None
+NUM_CATS = None
+NUM_COLORS = None
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+models_initialized = False
 
-try:
-    print(f"正在載入分類模型... (類別: {NUM_CATS})")
-    model = MultiHeadResNet(num_cats=NUM_CATS, num_cols=NUM_COLORS)
-    # 這裡記得確認 model_weights.pth 確實在 backend 資料夾裡
-    state_dict = torch.load("model_weights.pth", map_location=device)
-    model.load_state_dict(state_dict)
-    model.to(device)
-    model.eval()
-    classifier = model
-    print("✅ model_weights.pth 載入成功！")
-except Exception as e:
-    print(f"❌ 分類模型載入失敗: {e}")
-    print("💡 請確認 'model_weights.pth' 是否已複製到 backend 資料夾中")
-
-# 預處理
+# 預處理 (不依賴模型，可以提前定義)
 transform_classify = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-# 載入 CLIP 模型
-print("正在載入 CLIP 模型...")
-try:
-    CLIP_MODEL_NAME = "openai/clip-vit-base-patch32"
-    clip_model = CLIPModel.from_pretrained(CLIP_MODEL_NAME)
-    clip_processor = CLIPProcessor.from_pretrained(CLIP_MODEL_NAME)
-    print("✅ CLIP 模型載入成功！")
-except Exception as e:
-    print(f"❌ CLIP 模型載入失敗: {e}")
-    import traceback
-    traceback.print_exc()
-    # 不 exit，讓服務繼續運行
-
-print("=" * 50)
-print("✅ server.py 初始化完成，準備接收請求")
-print("=" * 50)
+def initialize_models():
+    """延遲初始化模型，只在第一次請求時加載"""
+    global classifier, clip_model, clip_processor, cat_map, color_map
+    global CLASS_NAMES, COLOR_NAMES, NUM_CATS, NUM_COLORS, models_initialized
+    
+    if models_initialized:
+        return
+    
+    print("=" * 50)
+    print("首次請求，正在加載模型...")
+    print("=" * 50)
+    
+    try:
+        # 加載類別映射
+        print("正在加載類別映射...")
+        cat_map, color_map = load_class_mappings()
+        CLASS_NAMES = [cat_map[i] for i in sorted(cat_map.keys())]
+        COLOR_NAMES = [color_map[i] for i in sorted(color_map.keys())]
+        NUM_CATS = len(CLASS_NAMES)
+        NUM_COLORS = len(COLOR_NAMES)
+        print(f"✅ 已加載 {NUM_CATS} 種服裝類別和 {NUM_COLORS} 種顏色")
+        
+        # 載入分類模型
+        print(f"正在載入分類模型... (類別: {NUM_CATS})")
+        model = MultiHeadResNet(num_cats=NUM_CATS, num_cols=NUM_COLORS)
+        state_dict = torch.load("model_weights.pth", map_location=device)
+        model.load_state_dict(state_dict)
+        model.to(device)
+        model.eval()
+        classifier = model
+        print("✅ model_weights.pth 載入成功！")
+        
+        # 載入 CLIP 模型
+        print("正在載入 CLIP 模型...")
+        CLIP_MODEL_NAME = "openai/clip-vit-base-patch32"
+        clip_model = CLIPModel.from_pretrained(CLIP_MODEL_NAME)
+        clip_processor = CLIPProcessor.from_pretrained(CLIP_MODEL_NAME)
+        print("✅ CLIP 模型載入成功！")
+        
+        models_initialized = True
+        print("=" * 50)
+        print("✅ 所有模型初始化完成！")
+        print("=" * 50)
+        
+    except Exception as e:
+        print(f"❌ 模型初始化失敗: {e}")
+        import traceback
+        traceback.print_exc()
 
 # ==========================================
 # 3. API 區域
@@ -131,6 +139,9 @@ def home():
 # 功能一：辨識衣服種類與顏色
 @app.post("/predict_type")
 async def predict_type(file: UploadFile = File(...)):
+    # 延迟初始化
+    initialize_models()
+    
     if classifier is None:
         return {"category": "unknown", "color": "unknown", "error": "Model not loaded"}
     
@@ -155,6 +166,9 @@ async def predict_type(file: UploadFile = File(...)):
 # 功能二：直接接收網址進行比對
 @app.post("/compare_url")
 async def compare_url(file1: UploadFile = File(...), url2: str = Form(...)):
+    # 延迟初始化
+    initialize_models()
+    
     try:
         # 1. 讀取使用者上傳的圖
         img1_data = await file1.read()
