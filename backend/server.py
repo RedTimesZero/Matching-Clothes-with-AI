@@ -12,6 +12,10 @@ import json
 import os
 import sys
 
+print("=" * 50)
+print("🚀 [DEBUG] server.py 開始加載")
+print("=" * 50)
+
 app = FastAPI()
 
 # --- 設定 CORS ---
@@ -61,12 +65,18 @@ def load_class_mappings():
 
 # 加載映射
 print("正在加載類別映射...")
-cat_map, color_map = load_class_mappings()
-CLASS_NAMES = [cat_map[i] for i in sorted(cat_map.keys())]
-COLOR_NAMES = [color_map[i] for i in sorted(color_map.keys())]
-NUM_CATS = len(CLASS_NAMES)
-NUM_COLORS = len(COLOR_NAMES)
-print(f"✅ 已加載 {NUM_CATS} 種服裝類別和 {NUM_COLORS} 種顏色")
+try:
+    cat_map, color_map = load_class_mappings()
+    CLASS_NAMES = [cat_map[i] for i in sorted(cat_map.keys())]
+    COLOR_NAMES = [color_map[i] for i in sorted(color_map.keys())]
+    NUM_CATS = len(CLASS_NAMES)
+    NUM_COLORS = len(COLOR_NAMES)
+    print(f"✅ 已加載 {NUM_CATS} 種服裝類別和 {NUM_COLORS} 種顏色")
+except Exception as e:
+    print(f"❌ 加載類別映射失敗: {e}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
 
 # 載入分類模型
 classifier = None
@@ -95,10 +105,20 @@ transform_classify = transforms.Compose([
 
 # 載入 CLIP 模型
 print("正在載入 CLIP 模型...")
-CLIP_MODEL_NAME = "openai/clip-vit-base-patch32"
-clip_model = CLIPModel.from_pretrained(CLIP_MODEL_NAME)
-clip_processor = CLIPProcessor.from_pretrained(CLIP_MODEL_NAME)
-print("✅ CLIP 模型載入成功！")
+try:
+    CLIP_MODEL_NAME = "openai/clip-vit-base-patch32"
+    clip_model = CLIPModel.from_pretrained(CLIP_MODEL_NAME)
+    clip_processor = CLIPProcessor.from_pretrained(CLIP_MODEL_NAME)
+    print("✅ CLIP 模型載入成功！")
+except Exception as e:
+    print(f"❌ CLIP 模型載入失敗: {e}")
+    import traceback
+    traceback.print_exc()
+    # 不 exit，讓服務繼續運行
+
+print("=" * 50)
+print("✅ server.py 初始化完成，準備接收請求")
+print("=" * 50)
 
 # ==========================================
 # 3. API 區域
