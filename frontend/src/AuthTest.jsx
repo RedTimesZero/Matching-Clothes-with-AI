@@ -41,7 +41,7 @@ export default function AuthTest({ onLogin }) {
           <div className="authHeader">
             <div className="authBrand">My Style Closet</div>
             <h2 className="authTitle">Sign in</h2>
-            <p className="authSubtitle">登入後才能使用衣櫃 / 今日推薦 / 二手交易</p>
+            <p className="authSubtitle">登入後才能使用衣櫃 / 智慧購物助手 / 二手交易</p>
           </div>
 
           <div className="authForm">
