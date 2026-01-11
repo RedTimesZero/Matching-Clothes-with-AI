@@ -294,7 +294,7 @@ export default function ClosetPage({ go, user }) {
       condition: '9成新',       // 預設9成新
       tag: '衣櫃推薦',          // 讓交易區知道是推薦來的
       image_url,
-      status: 'active',
+      status: 'available',
     })
 
     if (error) {
@@ -572,5 +572,4 @@ function ClosetModal({ mode, initial, onClose, onSubmit }) {
     </div>
   )
 }
-
 
