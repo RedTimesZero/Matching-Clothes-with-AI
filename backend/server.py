@@ -62,7 +62,7 @@ transform_classify = transforms.Compose([
 # Hugging Face API 設定
 HF_API_URL = os.getenv(
     "HF_API_URL",
-    "https://api-inference.huggingface.co/pipeline/feature-extraction/openai/clip-vit-base-patch32"
+    "https://api-inference.huggingface.co/models/openai/clip-vit-base-patch32"
 )
 HF_API_TOKEN = os.getenv("HF_API_TOKEN")
 HF_HEADERS = {"Authorization": f"Bearer {HF_API_TOKEN}"} if HF_API_TOKEN else {}
