@@ -77,7 +77,7 @@ function rowToItem(row) {
     worn: row.worn,
     image: row.image_url || '',
     image_path: row.image_path || null,
-    created_at: row.created_at || null, // ✅ for sorting
+    created_at: row.created_at || null, // for sorting
   }
 }
 
@@ -289,9 +289,9 @@ export default function ClosetPage({ go, user }) {
     const { error } = await supabase.from('market_listings').insert({
       seller_id: user.id,
       title: it.title ?? '未命名商品',
-      price: 300,              // 你可以改成你們預設價
-      size: 'M',               // 預設
-      condition: '9成新',       // 預設
+      price: 300,              // 預設價
+      size: 'M',               // 預設size is M
+      condition: '9成新',       // 預設9成新
       tag: '衣櫃推薦',          // 讓交易區知道是推薦來的
       image_url,
       status: 'active',
@@ -317,7 +317,7 @@ export default function ClosetPage({ go, user }) {
     title="我的衣櫃"
     subtitle="上傳衣服照片、分類、顏色分析、穿著次數。"
   >
-    {/* ✅ 上方主工具列：回首頁 + 新增 */}
+    {/* 上方主工具列：回首頁 + 新增 */}
     <div className="toolbar toolbarRow">
       <button className="btn btnGhost" onClick={() => go('home')}>
         ← 回主畫面
@@ -330,7 +330,7 @@ export default function ClosetPage({ go, user }) {
       </button>
     </div>
 
-    {/* ✅ 篩選列 */}
+    {/* 篩選列 */}
     <div className="filterBar">
       <input
         className="control controlGrow"
