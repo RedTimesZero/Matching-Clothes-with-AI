@@ -6,7 +6,7 @@ function TopNav({ variant, go }) {
       <div className="brand" onClick={() => go('home')}>My Style Closet</div>
       <div className="navMenu">
         <button className="navBtn" onClick={() => go('closet')}>我的衣櫃</button>
-        <button className="navBtn" onClick={() => go('today')}>購物智慧助手</button>
+        <button className="navBtn" onClick={() => go('today')}>智慧購物助手</button>
         <button className="navBtn" onClick={() => go('market')}>二手交易區</button>
       </div>
     </div>
