@@ -687,3 +687,29 @@
   border-color: #4a2c1d;
   color: #fff;
 }
+
+.kpiGrid{
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.kpiTile{
+  border: 1px solid rgba(74, 44, 29, 0.15);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(74, 44, 29, 0.02);
+}
+
+.kpiValue{
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.kpiLabel{
+  margin-top: 6px;
+  font-size: 12px;
+  opacity: 0.75;
+}

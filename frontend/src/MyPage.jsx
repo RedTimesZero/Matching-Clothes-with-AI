@@ -13,7 +13,14 @@ function imgOrFallback(url) {
 export default function MyPage({ go, user, openMarket }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-
+  //kpi
+  const [kpi, setKpi] = useState({
+  avoided: 0,
+  listedLow: 0,
+  soldRate: null,   // 0~1 或 null
+  avgWorn: 0,
+  medianWorn: 0,
+})
   // Seller: 我的商品
   const [myListings, setMyListings] = useState([])
   const [pendingCountMap, setPendingCountMap] = useState({}) // listing_id -> pending count
@@ -77,6 +84,62 @@ export default function MyPage({ go, user, openMarket }) {
         const m = {}
         for (const r of (info || [])) m[r.id] = r
         setListingInfoMap(m)
+        // ===== KPI 計算 =====
+
+        // A) Avoided duplicate buys：勸退次數（看事件表）
+        const { count: avoidedCount } = await supabase
+        .from('kpi_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('event_type', 'avoided_duplicate')
+
+        // B) Items listed from low-worn：一鍵上架次數（看事件表）
+        const { count: listedLowCount } = await supabase
+        .from('kpi_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('event_type', 'listed_from_low_worn')
+
+        // C) Sold rate：sold / total（用 market_listings 的 status）
+        const { count: totalListings } = await supabase
+        .from('market_listings')
+        .select('id', { count: 'exact', head: true })
+        .eq('seller_id', user.id)
+        .neq('status', 'hidden')
+
+        const { count: soldListings } = await supabase
+        .from('market_listings')
+        .select('id', { count: 'exact', head: true })
+        .eq('seller_id', user.id)
+        .eq('status', 'sold')
+
+        const soldRate =
+        totalListings && totalListings > 0 ? (soldListings || 0) / totalListings : null
+
+        // D) Closet utilization：平均 worn / 中位數 worn（用 closet_items）
+        const { data: wornRows } = await supabase
+        .from('closet_items')
+        .select('worn')
+        .eq('user_id', user.id)
+
+        const wornArr = (wornRows || []).map(r => Number(r.worn) || 0).sort((a, b) => a - b)
+        const avgWorn = wornArr.length
+        ? wornArr.reduce((s, x) => s + x, 0) / wornArr.length
+        : 0
+
+        const medianWorn = wornArr.length
+        ? (wornArr.length % 2 === 1
+            ? wornArr[(wornArr.length - 1) / 2]
+            : (wornArr[wornArr.length / 2 - 1] + wornArr[wornArr.length / 2]) / 2)
+        : 0
+
+        setKpi({
+        avoided: avoidedCount || 0,
+        listedLow: listedLowCount || 0,
+        soldRate,
+        avgWorn,
+        medianWorn,
+        })
       } else {
         setListingInfoMap({})
       }
@@ -112,7 +175,40 @@ export default function MyPage({ go, user, openMarket }) {
         <div className="spacer" />
         <button className="btn btnGhost" onClick={loadAll}>更新</button>
       </div>
+      <div className="card" style={{ marginTop: 14 }}>
+        <div className="cardBody">
+            <div className="cardTopRow">
+            <p className="cardTitle" style={{ margin: 0 }}>KPI Dashboard</p>
+            <span className="badge">Demo</span>
+            </div>
 
+            <div className="kpiGrid">
+            <div className="kpiTile">
+                <div className="kpiValue">{kpi.avoided}</div>
+                <div className="kpiLabel">Avoided duplicate buys</div>
+            </div>
+
+            <div className="kpiTile">
+                <div className="kpiValue">{kpi.listedLow}</div>
+                <div className="kpiLabel">Items listed from low-worn</div>
+            </div>
+
+            <div className="kpiTile">
+                <div className="kpiValue">
+                {kpi.soldRate == null ? '—' : `${Math.round(kpi.soldRate * 100)}%`}
+                </div>
+                <div className="kpiLabel">Sold rate (sold / listed)</div>
+            </div>
+
+            <div className="kpiTile">
+                <div className="kpiValue">
+                {kpi.avgWorn.toFixed(1)} / {kpi.medianWorn}
+                </div>
+                <div className="kpiLabel">Closet utilization (avg / median worn)</div>
+            </div>
+            </div>
+        </div>
+        </div>
       {error && (
         <div style={{ marginTop: 10, padding: 10, border: '1px solid rgba(139,46,46,.35)', borderRadius: 12 }}>
           <strong style={{ color: '#8b2e2e' }}>Error：</strong> {error}

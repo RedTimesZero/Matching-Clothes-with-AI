@@ -115,21 +115,38 @@ export default function TodayPage({ go, user }) {
 
       await new Promise(r => setTimeout(r, 300))
 
+      const decision = '千萬不要買 ⛔'
+      const maxSim = 0.92
+
       setResult({
-        decision: '千萬不要買 ⛔',
-        maxSim: 0.92,
+        decision,
+        maxSim,
         reasons: [
           `AI 發現衣櫃裡有幾乎一模一樣的 ${DEMO_PREDICTION.category}！`,
           '相似度最高的「未命名衣服」你幾乎沒穿過！',
         ],
         top: DEMO_TOP.map(x => ({
           ...x,
-          // 如果你沒有 demo-similar-2.jpg，就讓第二張用第一張避免破圖
           image_url: x.image_url === '/demo-similar-2.jpg' ? '/demo-similar.jpg' : x.image_url
         })),
       })
 
-      setStatusText('')
+      /* ✅ KPI：勸退成功就記一筆 event */
+      if (user?.id && maxSim >= 0.8) {
+        await supabase.from('kpi_events').insert({
+          user_id: user.id,
+          event_type: 'avoided_duplicate',
+          meta: {
+            decision,
+            maxSim,
+            demo: true,
+            category: DEMO_PREDICTION.category,
+            color: DEMO_PREDICTION.color,
+          },
+        })
+      }
+
+    setStatusText('')
     } catch (err) {
       console.error(err)
       alert('Demo 分析失敗（理論上不會發生）')
