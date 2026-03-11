@@ -38,7 +38,9 @@ export default function MarketPage({ go, user }) {
   const [comments, setComments] = useState([])
   const [commentsLoading, setCommentsLoading] = useState(false)
   const [commentBusy, setCommentBusy] = useState(false)
-
+  // inquiries狀態
+  const [inquiries, setInquiries] = useState([])
+  const [inquiriesLoading, setInquiriesLoading] = useState(false)
   // 搜尋
   const [q, setQ] = useState('')
   const filtered = useMemo(() => {
@@ -85,27 +87,27 @@ export default function MarketPage({ go, user }) {
     setItems(mapped)
     setLoading(false)
   }
-async function setStatus(id, status) {
-  if (!user) return alert('請先登入')
-  setBusy(true)
-  setError('')
+  async function setStatus(id, status) {
+    if (!user) return alert('請先登入')
+    setBusy(true)
+    setError('')
 
-  try {
-    const { error } = await supabase
-      .from('market_listings')
-      .update({ status })
-      .eq('id', id)
-      .eq('seller_id', user.id) // ✅ 只能改自己的
+    try {
+      const { error } = await supabase
+        .from('market_listings')
+        .update({ status })
+        .eq('id', id)
+        .eq('seller_id', user.id) // ✅ 只能改自己的
 
-    if (error) throw error
+      if (error) throw error
 
-    await fetchListings()
-  } catch (e) {
-    setError(e.message || String(e))
-  } finally {
-    setBusy(false)
+      await fetchListings()
+    } catch (e) {
+      setError(e.message || String(e))
+    } finally {
+      setBusy(false)
+    }
   }
-}
 
   async function createListing(form) {
     if (!user) return alert('請先登入才能上架')
@@ -125,6 +127,7 @@ async function setStatus(id, status) {
         condition: form.condition || '9成新',
         tag: form.tag || '新上架',
         image_url,
+        status: 'available', // ✅ 一定要有
       })
       if (error) throw error
 
@@ -265,7 +268,70 @@ async function setStatus(id, status) {
       setCommentBusy(false)
     }
   }
+  //====inquiries 的狀態 + CRUD=====
+  async function fetchInquiries(listingId) {
+    if (!listingId) return
+    setInquiriesLoading(true)
 
+    const { data, error } = await supabase
+      .from('inquiries')
+      .select('id,message,contact,offer_price,status,created_at,buyer_id,listing_id')
+      .eq('listing_id', listingId)
+      .order('created_at', { ascending: true })
+
+    setInquiriesLoading(false)
+    if (error) return setInquiries([])
+    setInquiries(data || [])
+  }
+
+  async function createInquiry(listingId, { message, contact, offer_price }) {
+    if (!user) return alert('請先登入才能購買詢問')
+    const t = (message || '').trim()
+    if (!t) return alert('請輸入詢問內容')
+
+    const { error } = await supabase.from('inquiries').insert({
+      listing_id: listingId,
+      buyer_id: user.id,
+      message: t,
+      contact: contact || null,
+      offer_price: offer_price ? Number(offer_price) : null,
+      status: 'pending',
+    })
+    if (error) return alert(error.message)
+
+    await fetchInquiries(listingId)
+  }
+
+  async function setInquiryStatus(inquiryId, nextStatus) {
+    if (!user) return alert('請先登入')
+    setBusy(true)
+    try {
+      const { data: row, error } = await supabase
+        .from('inquiries')
+        .update({ status: nextStatus })
+        .eq('id', inquiryId)
+        .select('listing_id')
+        .single()
+
+      if (error) throw error
+
+      // ✅ 接受詢問 -> 商品改成 reserved（更像真的交易流程）
+      if (nextStatus === 'accepted') {
+        await supabase
+          .from('market_listings')
+          .update({ status: 'reserved' })
+          .eq('id', row.listing_id)
+          .eq('seller_id', user.id)
+      }
+
+      await fetchInquiries(selectedId)
+      await fetchListings()
+    } catch (e) {
+      setError(e.message || String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
   // 初次載入 listings
   useEffect(() => {
     fetchListings()
@@ -276,6 +342,7 @@ async function setStatus(id, status) {
   useEffect(() => {
     if (!selectedId) return
     fetchComments(selectedId)
+    fetchInquiries(selectedId)   // ✅ 新增
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId])
 
@@ -365,10 +432,14 @@ async function setStatus(id, status) {
           user={user}
           comments={comments}
           loading={commentsLoading}
-          busy={commentBusy}
+          busy={commentBusy || busy}
+          inquiries={inquiries}
+          inquiriesLoading={inquiriesLoading}
           onClose={() => setSelectedId(null)}
           onAddComment={(text) => addComment(selectedItem.id, text)}
           onDeleteComment={deleteComment}
+          onCreateInquiry={(payload) => createInquiry(selectedItem.id, payload)}
+          onSetInquiryStatus={setInquiryStatus}
         />
       )}
     </Shell>
@@ -578,7 +649,21 @@ function ProductModal({ mode, initial, onClose, onSubmit }) {
 /* ======================
    ProductDetailModal：商品詳情 + 留言區（Supabase 版）
 ====================== */
-function ProductDetailModal({ item, user, comments, loading, busy, onClose, onAddComment, onDeleteComment }) {
+function ProductDetailModal({
+  item,
+  user,
+  comments,
+  loading,
+  busy,
+  inquiries,
+  inquiriesLoading,
+  onClose,
+  onAddComment,
+  onDeleteComment,
+  onCreateInquiry,
+  onSetInquiryStatus,
+}) {
+  // ===== 留言 =====
   const [text, setText] = useState('')
 
   function submit() {
@@ -587,6 +672,14 @@ function ProductDetailModal({ item, user, comments, loading, busy, onClose, onAd
     onAddComment(t)
     setText('')
   }
+
+  // ===== 購買詢問（買家填）=====
+  const [inqMsg, setInqMsg] = useState('')
+  const [inqContact, setInqContact] = useState('')
+  const [inqOffer, setInqOffer] = useState('')
+
+  // 判斷是不是賣家本人
+  const isSeller = user?.id && item.seller_id === user.id
 
   return (
     <div className="modalBackdrop" onClick={onClose}>
@@ -610,11 +703,133 @@ function ProductDetailModal({ item, user, comments, loading, busy, onClose, onAd
               <span>尺寸：{item.size}</span>
               <span>狀態：{item.condition}</span>
               <span className="price">NT$ {item.price}</span>
+              {/* 上架狀態（available/reserved/sold/hidden） */}
+              {item.status && <span>上架：{item.status}</span>}
             </div>
           </div>
 
           <hr style={{ margin: '16px 0', opacity: 0.2 }} />
 
+          {/* ======================
+              ✅ 購買詢問區（交易流程）
+             ====================== */}
+          {!isSeller ? (
+            <div>
+              <h4 style={{ margin: '0 0 10px 0' }}>購買詢問</h4>
+
+              <div className="formGrid">
+                <div className="field fieldFull">
+                  <label>聯絡方式（email/IG，可選）</label>
+                  <input
+                    value={inqContact}
+                    onChange={(e) => setInqContact(e.target.value)}
+                    placeholder="例如：penny@email.com / IG: xxx"
+                    disabled={!user || busy}
+                  />
+                </div>
+
+                <div className="field">
+                  <label>出價（可選）</label>
+                  <input
+                    type="number"
+                    value={inqOffer}
+                    onChange={(e) => setInqOffer(e.target.value)}
+                    placeholder="例如：350"
+                    disabled={!user || busy}
+                  />
+                </div>
+
+                <div className="field fieldFull">
+                  <label>訊息</label>
+                  <input
+                    value={inqMsg}
+                    onChange={(e) => setInqMsg(e.target.value)}
+                    placeholder={user ? "例如：想買！請問可小議嗎？" : "請先登入才能送出詢問"}
+                    disabled={!user || busy}
+                  />
+                </div>
+              </div>
+
+              <div className="toolbar" style={{ marginTop: 10 }}>
+                <button
+                  className="btn btnPrimary"
+                  disabled={!user || busy}
+                  onClick={() => {
+                    onCreateInquiry?.({
+                      message: inqMsg,
+                      contact: inqContact,
+                      offer_price: inqOffer,
+                    })
+                    setInqMsg('')
+                    setInqContact('')
+                    setInqOffer('')
+                  }}
+                >
+                  送出購買詢問
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <h4 style={{ margin: '0 0 10px 0' }}>購買詢問（賣家）</h4>
+
+              {inquiriesLoading ? (
+                <div style={{ opacity: 0.7 }}>載入詢問中...</div>
+              ) : (inquiries || []).length === 0 ? (
+                <div style={{ opacity: 0.7, fontSize: 14 }}>目前還沒有買家詢問。</div>
+              ) : (
+                <div style={{ display: 'grid', gap: 10 }}>
+                  {(inquiries || []).map((iq) => (
+                    <div
+                      key={iq.id}
+                      style={{
+                        border: '1px solid rgba(74, 44, 29, 0.15)',
+                        borderRadius: 12,
+                        padding: 10,
+                        background: 'rgba(74,44,29,0.02)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                        <strong style={{ fontSize: 14 }}>
+                          買家：{iq.buyer_id ? iq.buyer_id.slice(0, 6) : 'Unknown'}
+                        </strong>
+                        <span style={{ fontSize: 12, opacity: 0.65 }}>{iq.status}</span>
+                      </div>
+
+                      {iq.offer_price != null && <div style={{ marginTop: 6 }}>出價：NT$ {iq.offer_price}</div>}
+                      {iq.contact && <div style={{ marginTop: 6 }}>聯絡：{iq.contact}</div>}
+                      <div style={{ marginTop: 6 }}>{iq.message}</div>
+
+                      {iq.status === 'pending' && (
+                        <div className="toolbar" style={{ marginTop: 10 }}>
+                          <button
+                            className="btn btnPrimary"
+                            disabled={busy}
+                            onClick={() => onSetInquiryStatus?.(iq.id, 'accepted')}
+                          >
+                            接受（保留）
+                          </button>
+                          <button
+                            className="btn btnGhost"
+                            disabled={busy}
+                            onClick={() => onSetInquiryStatus?.(iq.id, 'rejected')}
+                          >
+                            拒絕
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <hr style={{ margin: '16px 0', opacity: 0.2 }} />
+
+          {/* ======================
+              原本的留言區（不動）
+             ====================== */}
           <div>
             <h4 style={{ margin: '0 0 10px 0' }}>留言區</h4>
 
@@ -643,7 +858,6 @@ function ProductDetailModal({ item, user, comments, loading, busy, onClose, onAd
                       </div>
                       <div style={{ marginTop: 6, fontSize: 14 }}>{c.text}</div>
 
-                      {/* 只讓自己刪自己的留言（也要 DB RLS 配合） */}
                       {user?.id && c.author_id === user.id && (
                         <div style={{ marginTop: 8 }}>
                           <button className="btn btnGhost" disabled={busy} onClick={() => onDeleteComment(c.id)}>
