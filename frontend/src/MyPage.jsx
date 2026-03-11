@@ -1,0 +1,220 @@
+import { useEffect, useMemo, useState } from 'react'
+import { supabase } from './supabaseClient.js'
+import Shell from './Shell.jsx'
+
+function shortId(id) {
+  return id ? id.slice(0, 6) : 'Unknown'
+}
+
+function imgOrFallback(url) {
+  return url || 'https://images.unsplash.com/photo-1520975958225-8d56346d1b60?auto=format&fit=crop&w=1200&q=60'
+}
+
+export default function MyPage({ go, user, openMarket }) {
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  // Seller: 我的商品
+  const [myListings, setMyListings] = useState([])
+  const [pendingCountMap, setPendingCountMap] = useState({}) // listing_id -> pending count
+
+  // Buyer: 我送出的詢問
+  const [myInquiries, setMyInquiries] = useState([])
+  const [listingInfoMap, setListingInfoMap] = useState({}) // listing_id -> {title,image_url,seller_id,status}
+
+  async function loadAll() {
+    if (!user?.id) return
+    setLoading(true)
+    setError('')
+
+    try {
+      // 1) 我上架的商品
+      const { data: listings, error: lerr } = await supabase
+        .from('market_listings')
+        .select('id,title,price,status,tag,image_url,created_at')
+        .eq('seller_id', user.id)
+        .order('created_at', { ascending: false })
+      if (lerr) throw lerr
+      setMyListings(listings || [])
+
+      // 2) 統計：每個商品 pending 詢問數（只抓我商品的 listing_id）
+      const ids = (listings || []).map(x => x.id)
+      if (ids.length) {
+        const { data: iq, error: iqErr } = await supabase
+          .from('inquiries')
+          .select('listing_id')
+          .in('listing_id', ids)
+          .eq('status', 'pending')
+        if (iqErr) throw iqErr
+
+        const map = {}
+        for (const row of (iq || [])) {
+          map[row.listing_id] = (map[row.listing_id] || 0) + 1
+        }
+        setPendingCountMap(map)
+      } else {
+        setPendingCountMap({})
+      }
+
+      // 3) 我送出的詢問（買家）
+      const { data: myIq, error: myIqErr } = await supabase
+        .from('inquiries')
+        .select('id,listing_id,message,contact,offer_price,status,created_at')
+        .eq('buyer_id', user.id)
+        .order('created_at', { ascending: false })
+      if (myIqErr) throw myIqErr
+      setMyInquiries(myIq || [])
+
+      // 4) 把詢問用到的 listing 資訊補齊（title/image/seller/status）
+      const listingIds = [...new Set((myIq || []).map(x => x.listing_id))].filter(Boolean)
+      if (listingIds.length) {
+        const { data: info, error: infoErr } = await supabase
+          .from('market_listings')
+          .select('id,title,image_url,seller_id,status')
+          .in('id', listingIds)
+        if (infoErr) throw infoErr
+
+        const m = {}
+        for (const r of (info || [])) m[r.id] = r
+        setListingInfoMap(m)
+      } else {
+        setListingInfoMap({})
+      }
+    } catch (e) {
+      setError(e.message || String(e))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadAll()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
+
+  const sellerPendingTotal = useMemo(() => {
+    return Object.values(pendingCountMap).reduce((a, b) => a + (b || 0), 0)
+  }, [pendingCountMap])
+
+  const buyerUpdates = useMemo(() => {
+    // demo：把非 pending 當作「有更新」
+    return (myInquiries || []).filter(x => x.status && x.status !== 'pending').length
+  }, [myInquiries])
+
+  return (
+    <Shell
+      go={go}
+      title="My Page"
+      subtitle="管理你的上架商品與購買詢問進度。"
+    >
+      <div className="toolbar toolbarRow">
+        <button className="btn btnGhost" onClick={() => go('home')}>← 回主畫面</button>
+        <div className="spacer" />
+        <button className="btn btnGhost" onClick={loadAll}>更新</button>
+      </div>
+
+      {error && (
+        <div style={{ marginTop: 10, padding: 10, border: '1px solid rgba(139,46,46,.35)', borderRadius: 12 }}>
+          <strong style={{ color: '#8b2e2e' }}>Error：</strong> {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div style={{ marginTop: 12, opacity: 0.75 }}>載入中...</div>
+      ) : (
+        <>
+          {/* ===== Seller 區 ===== */}
+          <div className="card" style={{ marginTop: 14 }}>
+            <div className="cardBody">
+              <div className="cardTopRow">
+                <p className="cardTitle" style={{ margin: 0 }}>我上架的商品（Seller）</p>
+                <span className="badge">待回覆 {sellerPendingTotal}</span>
+              </div>
+
+              {myListings.length === 0 ? (
+                <div style={{ marginTop: 10, opacity: 0.7 }}>你目前沒有上架商品。</div>
+              ) : (
+                <div className="grid" style={{ marginTop: 12 }}>
+                  {myListings.map((x) => (
+                    <div key={x.id} className="card">
+                      <img className="cardImg" alt={x.title} src={imgOrFallback(x.image_url)} />
+                      <div className="cardBody">
+                        <div className="cardTopRow">
+                          <p className="cardTitle">{x.title}</p>
+                          <span className="badge">{x.status || 'available'}</span>
+                        </div>
+                        <div className="meta">
+                          <span>NT$ {x.price}</span>
+                          <span>Tag: {x.tag}</span>
+                          <span>Pending: {pendingCountMap[x.id] || 0}</span>
+                        </div>
+                        <div className="toolbar" style={{ marginTop: 10, justifyContent: 'flex-start' }}>
+                          <button className="btn btnGhost" onClick={() => openMarket(x.id)}>
+                            查看商品
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ===== Buyer 區 ===== */}
+          <div className="card" style={{ marginTop: 18 }}>
+            <div className="cardBody">
+              <div className="cardTopRow">
+                <p className="cardTitle" style={{ margin: 0 }}>我送出的購買詢問（Buyer）</p>
+                <span className="badge">進度更新 {buyerUpdates}</span>
+              </div>
+
+              {myInquiries.length === 0 ? (
+                <div style={{ marginTop: 10, opacity: 0.7 }}>你目前沒有送出任何詢問。</div>
+              ) : (
+                <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
+                  {myInquiries.map((iq) => {
+                    const info = listingInfoMap[iq.listing_id]
+                    return (
+                      <div
+                        key={iq.id}
+                        style={{
+                          border: '1px solid rgba(74,44,29,0.15)',
+                          borderRadius: 12,
+                          padding: 12,
+                          background: 'rgba(74,44,29,0.02)'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                          <strong style={{ fontSize: 14 }}>
+                            {info?.title || `Listing ${shortId(iq.listing_id)}`}
+                          </strong>
+                          <span className="badge">{iq.status}</span>
+                        </div>
+
+                        <div className="meta" style={{ marginTop: 6 }}>
+                          {info?.seller_id && <span>賣家：{shortId(info.seller_id)}</span>}
+                          {iq.offer_price != null && <span>出價：NT$ {iq.offer_price}</span>}
+                          {iq.contact && <span>聯絡：{iq.contact}</span>}
+                          {info?.status && <span>商品狀態：{info.status}</span>}
+                        </div>
+
+                        <div style={{ marginTop: 6 }}>{iq.message}</div>
+
+                        <div className="toolbar" style={{ marginTop: 10, justifyContent: 'flex-start' }}>
+                          <button className="btn btnGhost" onClick={() => openMarket(iq.listing_id)}>
+                            查看商品
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </Shell>
+  )
+}

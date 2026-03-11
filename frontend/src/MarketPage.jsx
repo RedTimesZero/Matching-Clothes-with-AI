@@ -17,7 +17,7 @@ async function uploadMarketImage(file, userId) {
   return data.publicUrl
 }
 
-export default function MarketPage({ go, user }) {
+export default function MarketPage({ go, user, initialSelectedId }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -33,6 +33,10 @@ export default function MarketPage({ go, user }) {
     () => items.find((x) => x.id === selectedId) || null,
     [items, selectedId]
   )
+
+  useEffect(() => {
+    if (initialSelectedId) setSelectedId(initialSelectedId)
+  }, [initialSelectedId])
 
   // 留言狀態
   const [comments, setComments] = useState([])
@@ -370,7 +374,7 @@ export default function MarketPage({ go, user }) {
           placeholder="搜尋商品（title/tag/size）"
         />
 
-        <button className="btn btnGhost" onClick={() => {/* 重新整理 */}}>
+        <button className="btn btnGhost" onClick={fetchListings}>
           重新整理
         </button>
 
@@ -440,6 +444,10 @@ export default function MarketPage({ go, user }) {
           onDeleteComment={deleteComment}
           onCreateInquiry={(payload) => createInquiry(selectedItem.id, payload)}
           onSetInquiryStatus={setInquiryStatus}
+          onRefresh={async () => {
+            await fetchListings()
+            await fetchInquiries(selectedItem.id)
+          }}
         />
       )}
     </Shell>
@@ -662,6 +670,7 @@ function ProductDetailModal({
   onDeleteComment,
   onCreateInquiry,
   onSetInquiryStatus,
+  onRefresh,
 }) {
   // ===== 留言 =====
   const [text, setText] = useState('')
@@ -680,6 +689,7 @@ function ProductDetailModal({
 
   // 判斷是不是賣家本人
   const isSeller = user?.id && item.seller_id === user.id
+  const myInquiries = (inquiries || []).filter(iq => iq.buyer_id === user?.id)
 
   return (
     <div className="modalBackdrop" onClick={onClose}>
@@ -714,16 +724,17 @@ function ProductDetailModal({
               ✅ 購買詢問區（交易流程）
              ====================== */}
           {!isSeller ? (
+            
             <div>
               <h4 style={{ margin: '0 0 10px 0' }}>購買詢問</h4>
 
               <div className="formGrid">
                 <div className="field fieldFull">
-                  <label>聯絡方式（email/IG，可選）</label>
+                  <label>聯絡方式（email/IG等等，可選）</label>
                   <input
                     value={inqContact}
                     onChange={(e) => setInqContact(e.target.value)}
-                    placeholder="例如：penny@email.com / IG: xxx"
+                    placeholder="例如：example@gmail.com / IG: xxx"
                     disabled={!user || busy}
                   />
                 </div>
@@ -768,6 +779,49 @@ function ProductDetailModal({
                   送出購買詢問
                 </button>
               </div>
+              
+              {user && myInquiries.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  <h4 style={{ margin: '0 0 10px 0' }}>我的購買詢問狀態</h4>
+
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    {myInquiries.map((iq) => (
+                      <div
+                        key={iq.id}
+                        style={{
+                          border: '1px solid rgba(74, 44, 29, 0.15)',
+                          borderRadius: 12,
+                          padding: 10,
+                          background: 'rgba(74,44,29,0.02)'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                          <strong style={{ fontSize: 14 }}>狀態：{iq.status}</strong>
+                          <span style={{ fontSize: 12, opacity: 0.65 }}>
+                            {new Date(iq.created_at).toLocaleString()}
+                          </span>
+                        </div>
+
+                        {iq.offer_price != null && <div style={{ marginTop: 6 }}>我的出價：NT$ {iq.offer_price}</div>}
+                        {iq.contact && <div style={{ marginTop: 6 }}>我留的聯絡：{iq.contact}</div>}
+                        <div style={{ marginTop: 6 }}>{iq.message}</div>
+
+                        {iq.status === 'accepted' && (
+                          <div style={{ marginTop: 8, color: '#2e7d32', fontWeight: 600 }}>
+                            ✅ 賣家已接受，商品已保留（Reserved）
+                          </div>
+                        )}
+                        {iq.status === 'rejected' && (
+                          <div style={{ marginTop: 8, color: '#8b2e2e', fontWeight: 600 }}>
+                            ⛔ 賣家已拒絕
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             </div>
           ) : (
             <div>
