@@ -312,6 +312,8 @@ export default function ClosetPage({ go, user }) {
     }
   }
   async function listToMarket(it) {
+    if (!user?.id) return alert('請先登入')
+
     // 你 demo 的衣服欄位是 image，不一定叫 image_url，所以我做了 fallback
     const image_url = it.image_url ?? it.image ?? ''
 
@@ -330,6 +332,18 @@ export default function ClosetPage({ go, user }) {
       alert('上架失敗：' + error.message)
       return
     }
+
+    // ✅ KPI：一鍵上架（from low-worn）記一筆 event
+    const { error: kErr } = await supabase.from('kpi_events').insert({
+      user_id: user.id,
+      event_type: 'listed_from_low_worn',
+      meta: {
+        closet_item_id: it.id ?? null,
+        worn: it.worn ?? null,
+        tag: 'closet_recommend',
+      },
+    })
+    if (kErr) console.error('KPI insert failed:', kErr)
 
     alert('已上架到交易區！')
     go('market')
