@@ -73,6 +73,15 @@ export default function MarketPage({ go, user, initialSelectedId }) {
       return
     }
 
+    const sellerIds = [...new Set((data || []).map(r => r.seller_id).filter(Boolean))]
+    let nameMap = {}
+    if (sellerIds.length) {
+      const { data: profs } = await supabase
+        .from('profiles')
+        .select('id,display_name')
+        .in('id', sellerIds)
+      nameMap = Object.fromEntries((profs || []).map(p => [p.id, p.display_name]))
+    }
     // 映射成你前端想用的格式（image/seller）
     const mapped = (data || []).map((r) => ({
       id: r.id,
@@ -84,7 +93,9 @@ export default function MarketPage({ go, user, initialSelectedId }) {
       image: r.image_url,
       seller_id: r.seller_id,
       status: r.status || 'available', 
-      seller: r.seller_id === user?.id ? 'You' : (r.seller_id ? r.seller_id.slice(0, 6) : 'Unknown'),
+      seller: r.seller_id === user?.id
+      ? (nameMap[r.seller_id] || 'You')
+      : (nameMap[r.seller_id] || `User ${r.seller_id?.slice(0, 6)}`),
       created_at: r.created_at,
     }))
 

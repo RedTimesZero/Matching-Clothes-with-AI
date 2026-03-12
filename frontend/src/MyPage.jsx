@@ -29,6 +29,59 @@ export default function MyPage({ go, user, openMarket }) {
   const [myInquiries, setMyInquiries] = useState([])
   const [listingInfoMap, setListingInfoMap] = useState({}) // listing_id -> {title,image_url,seller_id,status}
 
+  const [displayName, setDisplayName] = useState('')
+  const [nameLoading, setNameLoading] = useState(true)
+  const [nameSaving, setNameSaving] = useState(false)
+
+  useEffect(() => {
+    if (!user?.id) return
+    let alive = true
+
+    async function loadProfile() {
+      setNameLoading(true)
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      if (!alive) return
+
+      // 沒有 profile 就自動用 email 前綴建一個（避免空白）
+      if (!data?.display_name) {
+        const fallback = (user.email?.split('@')?.[0] || 'User').slice(0, 20)
+        await supabase.from('profiles').upsert({ id: user.id, display_name: fallback })
+        setDisplayName(fallback)
+      } else {
+        setDisplayName(data.display_name)
+      }
+
+      setNameLoading(false)
+    }
+
+    loadProfile()
+    return () => { alive = false }
+  }, [user?.id])
+
+  async function saveName() {
+    const name = displayName.trim()
+    if (!name) return alert('名字不能空白')
+    if (name.length > 20) return alert('名字太長（建議 20 字內）')
+
+    setNameSaving(true)
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({ id: user.id, display_name: name })
+
+    setNameSaving(false)
+    if (error) alert(error.message)
+  }
+
+  async function logout() {
+    await supabase.auth.signOut()
+    // App.jsx 會自動回到登入頁
+  }
   async function loadAll() {
     if (!user?.id) return
     setLoading(true)
@@ -175,6 +228,38 @@ export default function MyPage({ go, user, openMarket }) {
         <div className="spacer" />
         <button className="btn btnGhost" onClick={loadAll}>更新</button>
       </div>
+
+      <div className="card" style={{ marginTop: 14 }}>
+        <div className="cardBody">
+          <div className="cardTopRow">
+            <p className="cardTitle" style={{ margin: 0 }}>Account</p>
+            <span className="badge">{user.email}</span>
+          </div>
+
+          <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
+            <div className="field">
+              <label>Display name（交易區顯示用）</label>
+              <input
+                className="control"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder={nameLoading ? 'Loading...' : '輸入你想顯示的名字'}
+                disabled={nameLoading || nameSaving}
+              />
+            </div>
+
+            <div className="toolbar" style={{ justifyContent: 'flex-start' }}>
+              <button className="btn btnPrimary" onClick={saveName} disabled={nameLoading || nameSaving}>
+                {nameSaving ? 'Saving...' : '儲存名字'}
+              </button>
+              <button className="btn btnGhost" onClick={logout}>
+                登出
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="card" style={{ marginTop: 14 }}>
         <div className="cardBody">
             <div className="cardTopRow">
