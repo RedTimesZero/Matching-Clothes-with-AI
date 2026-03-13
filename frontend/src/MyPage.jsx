@@ -15,12 +15,13 @@ export default function MyPage({ go, user, openMarket }) {
   const [error, setError] = useState('')
   //kpi
   const [kpi, setKpi] = useState({
-  avoided: 0,
-  listedLow: 0,
-  soldRate: null,   // 0~1 或 null
-  avgWorn: 0,
-  medianWorn: 0,
-})
+    avoided: 0,
+    listedLow: 0,
+    soldRate: null,   // 0~1 或 null
+    avgWorn: 0,
+    medianWorn: 0,
+    carbonReduced: 0,
+  })
   // Seller: 我的商品
   const [myListings, setMyListings] = useState([])
   const [pendingCountMap, setPendingCountMap] = useState({}) // listing_id -> pending count
@@ -186,12 +187,16 @@ export default function MyPage({ go, user, openMarket }) {
             : (wornArr[wornArr.length / 2 - 1] + wornArr[wornArr.length / 2]) / 2)
         : 0
 
+        const avoided = avoidedCount || 0
+        const carbonReduced = avoided * 4.2
+
         setKpi({
-        avoided: avoidedCount || 0,
-        listedLow: listedLowCount || 0,
-        soldRate,
-        avgWorn,
-        medianWorn,
+          avoided,
+          listedLow: listedLowCount || 0,
+          soldRate,
+          avgWorn,
+          medianWorn,
+          carbonReduced,
         })
       } else {
         setListingInfoMap({})
@@ -290,6 +295,13 @@ export default function MyPage({ go, user, openMarket }) {
                 {kpi.avgWorn.toFixed(1)} / {kpi.medianWorn}
                 </div>
                 <div className="kpiLabel">Closet utilization (avg / median worn)</div>
+            </div>
+
+            <div className="kpiTile">
+              <div className="kpiValue">
+                {kpi.carbonReduced.toFixed(1)} kg
+              </div>
+              <div className="kpiLabel">Carbon emissions reduced (kg CO₂e)</div>
             </div>
             </div>
         </div>
