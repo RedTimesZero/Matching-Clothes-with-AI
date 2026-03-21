@@ -491,7 +491,7 @@ function ClosetCard({ item, busy, onEdit, onDelete, onWorn }) {
       <img
         className="cardImg"
         alt={item.title}
-        src={item.image || "https://images.unsplash.com/photo-1520975958225-8d56346d1b60?auto=format&fit=crop&w=1200&q=60"}
+        src={item.image || ""}
       />
 
       <div className="cardActions">

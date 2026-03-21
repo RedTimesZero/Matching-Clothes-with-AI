@@ -2,12 +2,31 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabaseClient.js'
 import Shell from './Shell.jsx'
 
+const CATEGORY_OPTIONS = [
+  "Capris", "Jackets", "Jeans", "Leggings", "Shirts", "Shorts", "Skirts", 
+  "Sweaters", "Sweatshirts", "Track Pants", "Trousers", "Tshirts", "Tunics"
+];
+
+const COLOR_OPTIONS = [
+  "Black", "Blue", "Red", "White", "Grey Melange", "Pink", "Charcoal", 
+  "Navy Blue", "Grey", "Beige", "Yellow", "Brown", "Green", "Purple", 
+  "Turquoise Blue", "Olive", "Cream", "Maroon", "Peach", "Teal", "Lavender", 
+  "Orange", "Rust", "Magenta", "Nude", "Sea Green", "Mustard", "Multi", 
+  "Gold", "Off White", "Tan", "Mauve", "Khaki", "Coffee Brown", "Burgundy", "Lime Green"
+];
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+}
+
 function itemImage(it) {
-  return (
-    it?.image_url ||
-    it?.image ||
-    "https://images.unsplash.com/photo-1520975958225-8d56346d1b60?auto=format&fit=crop&w=1200&q=60"
-  )
+  // 只顯示真正的圖片網址，沒圖就回傳空字串
+  return it?.image_url || it?.image || ""
 }
 
 // ===== Demo 固定輸出（你要的文字/數字都在這裡改）=====
@@ -19,7 +38,7 @@ const DEMO_TOP = [
     title: '未命名衣服',
     worn: 0,
     sim: 0.92,
-    image_url: '/demo-similar.jpg', // ✅ 你準備的照片
+    image_url: '/demo-similar.jpg', // 你準備的照片
   },
   {
     id: 'demo-2',
@@ -32,131 +51,159 @@ const DEMO_TOP = [
 ]
 
 export default function TodayPage({ go, user }) {
-  // ====== 1) 衣櫃資料讀取（保留不動；只是 demo 不會拿來判斷） ======
-  const [closet, setCloset] = useState([])
-  const [loadingCloset, setLoadingCloset] = useState(true)
-  const [error, setError] = useState('')
+  // ====== 1) 狀態變數 ======
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState('');
+  const [closet, setCloset] = useState([]);
+  const [loadingCloset, setLoadingCloset] = useState(true);
+  const [error, setError] = useState('');
+  const [prediction, setPrediction] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [statusText, setStatusText] = useState('');
+  const [result, setResult] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
+  // ====== 2) 照片上傳處理 ======
+  function handleFile(e) {
+    const f = e.target.files[0];
+    if (!f) return;
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+    setResult(null);
+    setPrediction(null);
+    setIsEditing(false); // 上傳新照片時關閉編輯模式
+  }
+
+  // ====== 3) 讀取真實衣櫃資料 ======
   useEffect(() => {
     if (!user?.id) {
-      setCloset([])
-      setLoadingCloset(false)
-      return
+      setCloset([]);
+      setLoadingCloset(false);
+      return;
     }
 
-    let alive = true
+    let alive = true; // 防止記憶體洩漏
+    
     async function loadCloset() {
-      setLoadingCloset(true)
-      setError('')
+      setLoadingCloset(true);
+      setError('');
+      
+      try {
+        const { data, error: supabaseError } = await supabase
+          .from('closet_items')
+          .select('id, title, category, color, worn, image_url, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
-      const { data, error } = await supabase
-        .from('closet_items')
-        .select('id,title,category,color,worn,image_url,created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+        if (!alive) return;
+        if (supabaseError) throw supabaseError;
 
-      if (!alive) return
-      if (error) setError(error.message)
-      setCloset(data || [])
-      setLoadingCloset(false)
+        // ✅ 強制過濾掉沒有圖片或 ID 的髒資料
+        const cleanData = (data || []).filter(item => item.id && item.image_url);
+        
+        setCloset(cleanData);
+        console.log(`✅ 成功抓取真實衣櫃資料，共 ${cleanData.length} 件`);
+      } catch (err) {
+        if (alive) setError(err.message);
+      } finally {
+        if (alive) setLoadingCloset(false);
+      }
     }
 
-    loadCloset()
-    return () => { alive = false }
-  }, [user?.id])
+    loadCloset();
 
-  // ====== 2) 上傳狀態 ======
-  const [file, setFile] = useState(null)
-  const [preview, setPreview] = useState('')
+    return () => { alive = false; };
+  }, [user?.id]);
 
-  // Demo：固定的「AI 辨識結果」與「建議結果」
-  const [prediction, setPrediction] = useState(null)
-  const [busy, setBusy] = useState(false)
-  const [statusText, setStatusText] = useState('')
-  const [result, setResult] = useState(null)
-
-  function handleFile(e) {
-    const f = e.target.files?.[0]
-    if (!f) return
-    setFile(f)
-    setPreview(URL.createObjectURL(f))
-    setPrediction(null)
-    setResult(null)
-    setStatusText('')
-  }
-
+  // 清除預覽圖片記憶體
   useEffect(() => {
     return () => {
-      if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview)
-    }
-  }, [preview])
+      if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
 
-  // Demo 固定 topSimilar
-  const topSimilar = useMemo(() => {
-    if (!result?.top) return []
-    return result.top
-  }, [result])
-
-  // ====== 3) Demo 分析：不呼叫後端，不判斷，直接固定輸出 ======
+  // ====== 4) AI 真實分析與比對邏輯 ======
   async function analyzeWithAI() {
-    if (!file) return alert('請上傳一張圖片')
+    if (!file) return alert('請上傳一張圖片');
 
-    setBusy(true)
-    setResult(null)
-    setPrediction(null)
+    setBusy(true);
+    setResult(null);
+    setPrediction(null);
+    setStatusText('🔍 AI 正在辨識分類...');
 
     try {
-      // 做一點點「假 loading」，看起來更像 AI 在跑（可刪）
-      setStatusText('🔍 AI 正在辨識衣物類型與顏色...')
-      await new Promise(r => setTimeout(r, 500))
+      const formData = new FormData();
+      formData.append('file', file);
 
-      setPrediction(DEMO_PREDICTION)
-      setStatusText('✅ 辨識完成！')
+      const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'; 
+      
+      // 1. 呼叫分類 API
+      const res = await fetch(`${API_URL}/predict_type`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) throw new Error('分類 API 連線失敗');
+      
+      const aiResult = await res.json();
+      setPrediction({ category: aiResult.category, color: aiResult.color });
+      setStatusText('🔍 AI 正在掃描全衣櫃比對相似度...');
 
-      await new Promise(r => setTimeout(r, 300))
-
-      const decision = '千萬不要買 ⛔'
-      const maxSim = 0.92
-
-      setResult({
-        decision,
-        maxSim,
-        reasons: [
-          `AI 發現衣櫃裡有幾乎一模一樣的 ${DEMO_PREDICTION.category}！`,
-          '相似度最高的「未命名衣服」你幾乎沒穿過！',
-        ],
-        top: DEMO_TOP.map(x => ({
-          ...x,
-          image_url: x.image_url === '/demo-similar-2.jpg' ? '/demo-similar.jpg' : x.image_url
-        })),
-      })
-
-      /* ✅ KPI：勸退成功就記一筆 event */
-      if (user?.id && maxSim >= 0.8) {
-        await supabase.from('kpi_events').insert({
-          user_id: user.id,
-          event_type: 'avoided_duplicate',
-          meta: {
-            decision,
-            maxSim,
-            demo: true,
-            category: DEMO_PREDICTION.category,
-            color: DEMO_PREDICTION.color,
-          },
-        })
+      // 2. 準備比對資料
+      const targetItems = closet;
+      if (targetItems.length === 0) {
+        setResult({ decision: '衣櫃是空的，想買就買吧！', maxSim: 0, top: [] });
+        return;
       }
 
-    setStatusText('')
+      // 3. 呼叫相似度 API (真實比對模式)
+      // 先將上傳的圖片轉成 Base64
+      const base64Image = await fileToBase64(file);
+
+      const compRes = await fetch(`${API_URL}/compare_similarity`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_image: base64Image, // 
+          closet_items: targetItems.map(it => ({ id: it.id, title: it.title, image_url: it.image_url }))
+        }),
+      });
+      if (!compRes.ok) throw new Error('相似度 API 連線失敗');
+      
+      const compData = await compRes.json();
+
+      // 4. 設定最終結果
+      const topMatch = compData.top_matches[0];
+      const maxSim = topMatch ? topMatch.similarity : 0;
+      
+      setResult({
+        decision: maxSim >= 0.8 ? '建議不要買 ⛔' : '這件很適合你！ ✅',
+        maxSim: maxSim,
+        reasons: [
+          maxSim >= 0.8 ? `衣櫃裡已有相似度 ${Math.round(maxSim*100)}% 的衣服。` : "衣櫃裡沒有類似的款式。",
+        ],
+        top: compData.top_matches.map(m => {
+            const original = targetItems.find(i => i.id === m.id);
+            return { ...original, sim: m.similarity };
+        })
+      });
+
     } catch (err) {
-      console.error(err)
-      alert('Demo 分析失敗（理論上不會發生）')
+      console.error(err);
+      alert(`分析失敗: ${err.message} \n請檢查 Python 後端是否啟動`);
     } finally {
-      setBusy(false)
+      setBusy(false);
+      setStatusText('');
     }
   }
 
-  const closetCount = closet.length
+  const topSimilar = useMemo(() => {
+    if (!result?.top) return [];
+    return result.top;
+  }, [result]);
 
+  const closetCount = closet.length;
+
+  // ====== 5) UI 渲染區段 ======
   return (
     <Shell
       go={go}
@@ -177,11 +224,9 @@ export default function TodayPage({ go, user }) {
         </div>
       )}
 
-      {/* ===== 上傳與操作區 ===== */}
+      {/* 上傳與操作區 */}
       <div className="card" style={{ marginTop: 14 }}>
         <div className="cardBody">
-
-          {/* 圖片預覽區 */}
           <div style={{ textAlign: 'center', marginBottom: 20 }}>
             {preview ? (
               <img
@@ -196,28 +241,65 @@ export default function TodayPage({ go, user }) {
             )}
           </div>
 
-          {/* AI 狀態顯示條 */}
           {(busy || statusText) && (
             <div style={{
-              marginBottom: 15,
-              padding: '8px 12px',
-              background: busy ? '#e3f2fd' : '#e8f5e9',
-              color: busy ? '#1565c0' : '#2e7d32',
-              borderRadius: 6,
-              fontSize: 14,
-              textAlign: 'center',
-              fontWeight: 500
+              marginBottom: 15, padding: '8px 12px',
+              background: busy ? '#e3f2fd' : '#e8f5e9', color: busy ? '#1565c0' : '#2e7d32',
+              borderRadius: 6, fontSize: 14, textAlign: 'center', fontWeight: 500
             }}>
               {statusText || '準備就緒'}
             </div>
           )}
 
-          {/* 辨識結果顯示 */}
+          {/* 辨識結果與人工校正 */}
           {prediction && !busy && (
-            <div style={{ marginBottom: 15, textAlign: 'center' }}>
-              <span className="badge" style={{ fontSize: 14, padding: '6px 12px', background: '#333', color: '#fff' }}>
-                AI 辨識結果：{prediction.color} {prediction.category}
-              </span>
+            <div style={{ marginBottom: 15, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+              
+              {!isEditing ? (
+                /* 顯示模式 */
+                <>
+                  <span className="badge" style={{ fontSize: 14, padding: '6px 12px', background: '#333', color: '#fff' }}>
+                    AI 辨識結果：{prediction.color} {prediction.category}
+                  </span>
+                  <button 
+                    className="btn btnGhost" 
+                    style={{ fontSize: 12, padding: '4px 8px', color: '#666', border: '1px solid #ccc' }}
+                    onClick={() => setIsEditing(true)}
+                  >
+                    ✏️ 辨識錯誤？手動修改
+                  </button>
+                </>
+              ) : (
+                /* 編輯模式 (下拉選單) */
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', background: '#f9f9f9', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}>
+                  
+                  {/* 顏色選單 */}
+                  <select 
+                    value={prediction.color} 
+                    onChange={(e) => setPrediction({ ...prediction, color: e.target.value })}
+                    style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontSize: 14 }}
+                  >
+                    {COLOR_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+
+                  {/* 分類選單 */}
+                  <select 
+                    value={prediction.category} 
+                    onChange={(e) => setPrediction({ ...prediction, category: e.target.value })}
+                    style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc', fontSize: 14 }}
+                  >
+                    {CATEGORY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+
+                  <button 
+                    className="btn btnPrimary" 
+                    style={{ fontSize: 12, padding: '6px 12px' }}
+                    onClick={() => setIsEditing(false)}
+                  >
+                    ✅ 儲存修改
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -225,13 +307,7 @@ export default function TodayPage({ go, user }) {
             <label
               htmlFor="file-upload"
               className="btn btnPrimary"
-              style={{
-                width: '100%',
-                display: 'block',
-                textAlign: 'center',
-                cursor: 'pointer',
-                boxSizing: 'border-box'
-              }}
+              style={{ width: '100%', display: 'block', textAlign: 'center', cursor: 'pointer', boxSizing: 'border-box' }}
             >
               {preview ? '更換照片' : '上傳照片'}
             </label>
@@ -257,7 +333,7 @@ export default function TodayPage({ go, user }) {
         </div>
       </div>
 
-      {/* ===== 結果建議區 ===== */}
+      {/* 結果建議區 */}
       {result && (
         <div className="card" style={{ marginTop: 18, border: result.maxSim >= 0.8 ? '2px solid #ef5350' : '1px solid #ddd' }}>
           <div className="cardBody">
@@ -309,5 +385,5 @@ export default function TodayPage({ go, user }) {
         </div>
       )}
     </Shell>
-  )
+  );
 }

@@ -3,7 +3,7 @@ import requests
 import torch
 import torch.nn as nn
 from torchvision import models, transforms
-from fastapi import FastAPI, File, UploadFile, Form
+from fastapi import FastAPI, File, UploadFile, Form, Body
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 import torch.nn.functional as F
@@ -12,13 +12,14 @@ import os
 import sys
 import numpy as np
 from skimage.metrics import structural_similarity as ssim
+from rembg import remove
 
 app = FastAPI()
 
 # --- 設定 CORS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -170,9 +171,23 @@ async def predict_type(file: UploadFile = File(...)):
 
     try:
         image_data = await file.read()
-        image = Image.open(io.BytesIO(image_data)).convert("RGB")
+        original_image = Image.open(io.BytesIO(image_data)).convert("RGB")
         
-        img_tensor = transform_classify(image).unsqueeze(0).to(device)
+        # --- 🚀 補回 AI 去背魔法 ---
+        print("✨ 正在執行 AI 去背...")
+        no_bg_image = remove(original_image)
+        
+        # 將去背後的圖片貼在純白背景上，模擬電商圖庫環境，增加顏色準確度
+        white_bg = Image.new("RGB", no_bg_image.size, (255, 255, 255))
+        if no_bg_image.mode == 'RGBA':
+            white_bg.paste(no_bg_image, mask=no_bg_image.split()[3])
+            final_image = white_bg
+        else:
+            final_image = no_bg_image.convert("RGB")
+        # --------------------------
+        
+        # 使用去背後的 final_image 進行預測
+        img_tensor = transform_classify(final_image).unsqueeze(0).to(device)
         
         with torch.no_grad():
             cat_logits, col_logits = model(img_tensor)
@@ -185,46 +200,76 @@ async def predict_type(file: UploadFile = File(...)):
             pred_cat = classes[c_idx] if classes and c_idx < len(classes) else "unknown"
             pred_col = colors[co_idx] if colors and co_idx < len(colors) else "unknown"
 
+        print(f"🎯 辨識結果: {pred_col} {pred_cat}")
         return {"category": pred_cat, "color": pred_col}
+        
     except Exception as e:
-        print(f"預測錯誤: {e}")
+        print(f"❌ 預測錯誤: {e}")
         return {"category": "error", "color": "error"}
 
-@app.post("/compare_url")
-async def compare_url(file1: UploadFile = File(...), url2: str = Form(...)):
-    print("\n" + "="*60)
-    print("📸 收到 /compare_url 請求")
-    print(f"🔗 url2: {url2[:80]}...")
-    
-    try:
-        # 讀取上傳的第一張圖
-        file1_data = await file1.read()
-        print(f"✅ file1 大小: {len(file1_data)} bytes")
-        img1 = Image.open(io.BytesIO(file1_data)).convert("RGB")
-        print(f"✅ img1 尺寸: {img1.size}")
-        
-        # 下載第二張圖
-        print(f"⬇️ 正在下載 url2...")
-        r = requests.get(url2, timeout=12)
-        r.raise_for_status()
-        print(f"✅ url2 下載成功: {len(r.content)} bytes")
-        img2 = Image.open(io.BytesIO(r.content)).convert("RGB")
-        print(f"✅ img2 尺寸: {img2.size}")
 
-        # 計算 SSIM 相似度（無需 CLIP 模型，記憶體佔用 <1MB）
-        print("🤖 計算 SSIM 相似度...")
-        score = image_similarity_ssim(img1, img2)
-        print(f"🎯 SSIM 相似度: {score:.2f}%")
+@app.post("/compare_similarity")
+async def compare_similarity(data: dict = Body(...)):
+    print("\n" + "="*60)
+    print("📸 收到 /compare_similarity 請求 (真實比對模式)")
+    
+    import base64
+    import io
+    import requests
+    
+    try: 
+        source_b64 = data.get("source_image", "")
+        closet_items = data.get("closet_items", []) 
+        
+        # 1. 解碼前端傳來的 Base64 圖片
+        # 移除 "data:image/jpeg;base64," 這類的前綴
+        if "," in source_b64:
+            source_b64 = source_b64.split(",")[1]
+            
+        img_bytes = base64.b64decode(source_b64)
+        source_img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+
+        print(f"📦 準備比對 {len(closet_items)} 件衣物")
+        results = []
+
+        # 2. 逐一下載衣櫃圖片並進行 SSIM 真實比對
+        for item in closet_items:
+            img_url = item.get("image_url")
+            if not img_url:
+                continue
+            
+            try:
+                # 下載衣櫃裡的衣服圖片
+                resp = requests.get(img_url, timeout=5)
+                resp.raise_for_status()
+                closet_img = Image.open(io.BytesIO(resp.content)).convert("RGB")
+
+                # 🚀 呼叫你寫好的 SSIM 函數！
+                sim_score = image_similarity_ssim(source_img, closet_img)
+                
+                # 你的函數回傳 0-100，我們轉成前端需要的 0.00-1.00 格式
+                sim_value = round(sim_score / 100.0, 2)
+
+                results.append({
+                    "id": item.get("id"),
+                    "similarity": sim_value, 
+                    "title": item.get("title", "未命名衣物")
+                })
+                print(f"  - 和 [{item.get('title')}] 的真實相似度: {sim_score:.1f}%")
+
+            except Exception as img_err:
+                print(f"  - ⚠️ 跳過項目 {item.get('id')}: 圖片處理失敗 ({img_err})")
+                continue
+
+        # 3. 排序並回傳
+        results.sort(key=lambda x: x["similarity"], reverse=True)
+        print(f"✅ 成功處理 {len(results)} 筆真實比對")
         print("="*60 + "\n")
         
-        return {
-            "similarity": round(score, 2),
-            "message": "success"
-        }
+        return {"top_matches": results}
 
     except Exception as e:
-        print(f"❌ 比對錯誤: {e}")
+        print(f"❌ 後端出錯: {e}")
         import traceback
         traceback.print_exc()
-        print("="*60 + "\n")
-        return {"similarity": 0, "message": str(e)}
+        return {"top_matches": [], "error": str(e)}
