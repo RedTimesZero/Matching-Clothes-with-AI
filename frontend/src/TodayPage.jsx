@@ -135,61 +135,59 @@ export default function TodayPage({ go, user }) {
       const formData = new FormData();
       formData.append('file', file);
 
-      const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'; 
+      // 確保這裡抓到的是 Vercel 設定的網址
+      const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
       
-      // 1. 呼叫分類 API
+      // 1. 呼叫分類 API (加入超時保護的想法)
       const res = await fetch(`${API_URL}/predict_type`, {
         method: 'POST',
         body: formData,
       });
-      if (!res.ok) throw new Error('分類 API 連線失敗');
+      
+      if (!res.ok) throw new Error(`分類失敗 (HTTP ${res.status})`);
       
       const aiResult = await res.json();
       setPrediction({ category: aiResult.category, color: aiResult.color });
-      setStatusText('🔍 AI 正在掃描全衣櫃比對相似度...');
+      setStatusText('🔍 正在比對衣櫃相似度...');
 
       // 2. 準備比對資料
-      const targetItems = closet;
-      if (targetItems.length === 0) {
+      if (closet.length === 0) {
         setResult({ decision: '衣櫃是空的，想買就買吧！', maxSim: 0, top: [] });
         return;
       }
 
-      // 3. 呼叫相似度 API (真實比對模式)
-      // 先將上傳的圖片轉成 Base64
       const base64Image = await fileToBase64(file);
 
+      // 3. 呼叫相似度 API
       const compRes = await fetch(`${API_URL}/compare_similarity`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          source_image: base64Image, // 
-          closet_items: targetItems.map(it => ({ id: it.id, title: it.title, image_url: it.image_url }))
+          source_image: base64Image,
+          closet_items: closet.map(it => ({ id: it.id, title: it.title, image_url: it.image_url }))
         }),
       });
-      if (!compRes.ok) throw new Error('相似度 API 連線失敗');
+      
+      if (!compRes.ok) throw new Error(`比對失敗 (HTTP ${compRes.status})`);
       
       const compData = await compRes.json();
 
-      // 4. 設定最終結果
+      // 4. 設定結果 (此處邏輯不變)
       const topMatch = compData.top_matches[0];
       const maxSim = topMatch ? topMatch.similarity : 0;
       
       setResult({
         decision: maxSim >= 0.8 ? '建議不要買 ⛔' : '這件很適合你！ ✅',
         maxSim: maxSim,
-        reasons: [
-          maxSim >= 0.8 ? `衣櫃裡已有相似度 ${Math.round(maxSim*100)}% 的衣服。` : "衣櫃裡沒有類似的款式。",
-        ],
         top: compData.top_matches.map(m => {
-            const original = targetItems.find(i => i.id === m.id);
+            const original = closet.find(i => i.id === m.id);
             return { ...original, sim: m.similarity };
         })
       });
 
     } catch (err) {
-      console.error(err);
-      alert(`分析失敗: ${err.message} \n請檢查 Python 後端是否啟動`);
+      console.error("❌ 流程中斷:", err);
+      alert(`分析失敗: ${err.message}\n請確認 Render 後端網址是否正確且已啟動。`);
     } finally {
       setBusy(false);
       setStatusText('');

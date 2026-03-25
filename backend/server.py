@@ -12,7 +12,6 @@ import os
 import sys
 import numpy as np
 from skimage.metrics import structural_similarity as ssim
-from rembg import remove
 
 app = FastAPI()
 
@@ -171,23 +170,11 @@ async def predict_type(file: UploadFile = File(...)):
 
     try:
         image_data = await file.read()
-        original_image = Image.open(io.BytesIO(image_data)).convert("RGB")
+        # 直接使用原始圖片，不進行去背處理
+        image = Image.open(io.BytesIO(image_data)).convert("RGB")
         
-        # --- 🚀 補回 AI 去背魔法 ---
-        print("✨ 正在執行 AI 去背...")
-        no_bg_image = remove(original_image)
-        
-        # 將去背後的圖片貼在純白背景上，模擬電商圖庫環境，增加顏色準確度
-        white_bg = Image.new("RGB", no_bg_image.size, (255, 255, 255))
-        if no_bg_image.mode == 'RGBA':
-            white_bg.paste(no_bg_image, mask=no_bg_image.split()[3])
-            final_image = white_bg
-        else:
-            final_image = no_bg_image.convert("RGB")
-        # --------------------------
-        
-        # 使用去背後的 final_image 進行預測
-        img_tensor = transform_classify(final_image).unsqueeze(0).to(device)
+        # 預處理與預測
+        img_tensor = transform_classify(image).unsqueeze(0).to(device)
         
         with torch.no_grad():
             cat_logits, col_logits = model(img_tensor)
@@ -200,11 +187,9 @@ async def predict_type(file: UploadFile = File(...)):
             pred_cat = classes[c_idx] if classes and c_idx < len(classes) else "unknown"
             pred_col = colors[co_idx] if colors and co_idx < len(colors) else "unknown"
 
-        print(f"🎯 辨識結果: {pred_col} {pred_cat}")
         return {"category": pred_cat, "color": pred_col}
-        
     except Exception as e:
-        print(f"❌ 預測錯誤: {e}")
+        print(f"❌ 預測出錯: {e}")
         return {"category": "error", "color": "error"}
 
 
